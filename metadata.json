@@ -1,0 +1,6 @@
+{
+  "name": "Read2Print",
+  "description": "লেখকদের জন্য কন্টেন্ট প্রকাশ করার এবং পাঠকদের জন্য কাস্টম বই তৈরির ও প্রিন্ট করে নেওয়ার একটি ওয়ান-স্টপ প্ল্যাটফর্ম।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
