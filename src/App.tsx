@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Writer, Article, CartItem, Order } from './types';
-import { INITIAL_WRITERS, INITIAL_ARTICLES } from './data';
+import { Writer, Article, CartItem, Order, ReaderUser } from './types';
+import { INITIAL_WRITERS, INITIAL_ARTICLES, INITIAL_READERS } from './data';
 import WriterPanel from './components/WriterPanel';
 import ReaderPanel from './components/ReaderPanel';
 import AdminPanel from './components/AdminPanel';
@@ -134,6 +134,23 @@ export default function App() {
     };
 
     return [initialOrder];
+  });
+
+  const [readers, setReaders] = useState<ReaderUser[]>(() => {
+    const saved = localStorage.getItem('r2p_readers');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.length < INITIAL_READERS.length) {
+        return INITIAL_READERS;
+      }
+      return parsed;
+    }
+    return INITIAL_READERS;
+  });
+
+  const [loggedInReader, setLoggedInReader] = useState<ReaderUser | null>(() => {
+    const saved = localStorage.getItem('r2p_logged_in_reader');
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [readerCoins, setReaderCoins] = useState<number>(() => {
@@ -272,6 +289,18 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('r2p_writers', JSON.stringify(writers));
   }, [writers]);
+
+  useEffect(() => {
+    localStorage.setItem('r2p_readers', JSON.stringify(readers));
+  }, [readers]);
+
+  useEffect(() => {
+    if (loggedInReader) {
+      localStorage.setItem('r2p_logged_in_reader', JSON.stringify(loggedInReader));
+    } else {
+      localStorage.removeItem('r2p_logged_in_reader');
+    }
+  }, [loggedInReader]);
 
   useEffect(() => {
     localStorage.setItem('r2p_articles', JSON.stringify(articles));
@@ -500,6 +529,10 @@ export default function App() {
                 onAddArticle={handleAddArticle}
                 onDeleteArticle={handleDeleteArticle}
                 onUpdateArticle={handleUpdateArticle}
+                readers={readers}
+                setReaders={setReaders}
+                loggedInReader={loggedInReader}
+                setLoggedInReader={setLoggedInReader}
               />
             )}
 
@@ -514,6 +547,9 @@ export default function App() {
                 onApproveApplication={handleApproveApplication}
                 onRejectApplication={handleRejectApplication}
                 platformRevenue={platformRevenue}
+                readers={readers}
+                setReaders={setReaders}
+                onUpdateArticle={handleUpdateArticle}
               />
             )}
           </motion.div>

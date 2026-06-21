@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Article, CartItem, Order, Writer } from '../types';
+import { Article, CartItem, Order, Writer, ReaderUser } from '../types';
 import { 
   BookOpen, Search, Filter, Bookmark, ShoppingBag, ArrowRight, BookMarked, 
   Trash2, HelpCircle, MapPin, Phone, CreditCard, ChevronRight, CheckCircle2, 
@@ -84,6 +84,10 @@ interface ReaderPanelProps {
   onAddArticle: (article: Article) => void;
   onDeleteArticle: (id: string) => void;
   onUpdateArticle: (id: string, article: Partial<Article>) => void;
+  readers?: ReaderUser[];
+  setReaders?: React.Dispatch<React.SetStateAction<ReaderUser[]>>;
+  loggedInReader?: ReaderUser | null;
+  setLoggedInReader?: React.Dispatch<React.SetStateAction<ReaderUser | null>>;
 }
 
 export default function ReaderPanel({
@@ -108,7 +112,11 @@ export default function ReaderPanel({
   onUpdateWriter,
   onAddArticle,
   onDeleteArticle,
-  onUpdateArticle
+  onUpdateArticle,
+  readers = [],
+  setReaders,
+  loggedInReader,
+  setLoggedInReader
 }: ReaderPanelProps) {
   const [activeTab, setActiveTab] = useState<'discover' | 'my-profile' | 'shelf' | 'print-cart' | 'coin-store' | 'author-profiles' | 'become-writer'>('discover');
   const [selectedAuthorForProfile, setSelectedAuthorForProfile] = useState<Writer | null>(null);
@@ -134,8 +142,16 @@ export default function ReaderPanel({
     }
   }, [writers]);
 
+  const lastTrackedReadArticleId = React.useRef<string | null>(null);
+
   useEffect(() => {
     setReadingScrollProgress(0);
+    if (viewingArticle?.id && viewingArticle.id !== lastTrackedReadArticleId.current) {
+      lastTrackedReadArticleId.current = viewingArticle.id;
+      if (onUpdateArticle) {
+        onUpdateArticle(viewingArticle.id, { reads: (viewingArticle.reads || 0) + 1 });
+      }
+    }
   }, [viewingArticle?.id]);
   
   // Coin purchasing bKash/Nagad checkout process states
@@ -713,9 +729,12 @@ export default function ReaderPanel({
 
                         <h3 
                           onClick={() => setViewingArticle(art)}
-                          className="font-bold text-indigo-700 text-lg group-hover:text-indigo-900 transition-colors cursor-pointer leading-snug"
+                          className="font-bold text-indigo-700 text-lg group-hover:text-indigo-900 transition-colors cursor-pointer leading-snug flex items-center justify-between gap-1.5 flex-wrap"
                         >
-                          {art.title}
+                          <span>{art.title}</span>
+                          <span className="inline-flex items-center gap-0.5 text-xs bg-amber-50 text-amber-600 font-bold border border-amber-100 px-1.5 py-0.5 rounded-full shrink-0 select-none font-mono" title="প্রয়োজনীয় কয়েন">
+                            🪙 {art.requiredCoins || 0}
+                          </span>
                         </h3>
 
                         <div 
@@ -732,7 +751,13 @@ export default function ReaderPanel({
                           />
                           <span className="text-xs text-gray-750 font-bold group-hover/author:underline">{art.writerName}</span>
                           <span className="text-gray-350 text-xs">•</span>
-                          <span className="text-[10px] text-gray-400 font-mono" onClick={(e) => e.stopPropagation()}>{art.wordCount} শব্দ</span>
+                          <span className="text-[10px] text-gray-400 font-mono flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <span>{art.wordCount} শব্দ</span>
+                            <span className="text-slate-300">|</span>
+                            <span className="text-indigo-600/80 font-semibold flex items-center gap-0.5 bg-indigo-50/50 px-1.5 py-0.2 rounded-sm" title="মোট পঠন সংখ্যা">
+                              👁️ {art.reads || 0} বার
+                            </span>
+                          </span>
                         </div>
 
                         <p className="text-xs text-gray-500 leading-relaxed text-justify line-clamp-3">
@@ -1741,10 +1766,20 @@ export default function ReaderPanel({
                               </div>
                               <h4 
                                 onClick={() => setViewingArticle(post)}
-                                className="font-extrabold text-gray-900 hover:text-indigo-600 cursor-pointer text-sm leading-snug line-clamp-2"
+                                className="font-extrabold text-gray-900 hover:text-indigo-600 cursor-pointer text-sm leading-snug line-clamp-2 flex items-center justify-between gap-1.5 flex-wrap"
                               >
-                                {post.title}
+                                <span>{post.title}</span>
+                                <span className="inline-flex items-center gap-0.5 text-xs bg-amber-50 text-amber-600 font-bold border border-amber-100 px-1.5 py-0.5 rounded-full shrink-0 select-none font-mono" title="প্রয়োজনীয় কয়েন">
+                                  🪙 {post.requiredCoins || 0}
+                                </span>
                               </h4>
+                              <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-mono">
+                                <span>{post.wordCount} শব্দ</span>
+                                <span className="text-slate-200">|</span>
+                                <span className="text-indigo-600/85 font-semibold flex items-center gap-0.5 bg-indigo-50 px-1 py-0.2 rounded-sm" title="মোট পঠন সংখ্যা">
+                                  👁️ {post.reads || 0} বার
+                                </span>
+                              </div>
                               <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed text-justify">
                                 {post.content}
                               </p>
@@ -1808,10 +1843,16 @@ export default function ReaderPanel({
                                   <img
                                     src={writer.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"}
                                     alt={writer.name}
-                                    className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-xs"
+                                    onClick={() => setSelectedAuthorForProfile(writer)}
+                                    className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
                                   />
                                   <div className="text-left">
-                                    <div className="font-extrabold text-gray-900 text-xs md:text-sm">{writer.name}</div>
+                                    <div 
+                                      onClick={() => setSelectedAuthorForProfile(writer)}
+                                      className="font-extrabold text-gray-900 text-xs md:text-sm hover:text-indigo-650 hover:underline cursor-pointer progression-underline transition-colors"
+                                    >
+                                      {writer.name}
+                                    </div>
                                     <div className="text-[10px] text-gray-450 font-mono">@{writer.username}</div>
                                     {writer.bio && (
                                       <div className="text-[11px] text-gray-500 line-clamp-1 mt-0.5 max-w-xs">{writer.bio}</div>
