@@ -23,6 +23,20 @@ export interface Article {
   reads: number;
   wordCount: number;
   requiredCoins?: number; // Coins required to unlock this article (0 or more)
+  hidden?: boolean; // Whether the admin has hidden the article
+}
+
+export interface ReaderUser {
+  id: string;
+  name: string;
+  username: string;
+  avatar: string;
+  currentCoins: number;
+  spentAmount: number; // total money spent to buy coins
+  totalCoinsPurchased: number; // lifetime total coins
+  printCartCount: number; // number of products in print-ready queue/order or active cart
+  bio?: string;
+  savedArticlesCount?: number;
 }
 
 export interface CartItem {

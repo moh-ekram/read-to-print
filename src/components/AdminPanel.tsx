@@ -35,6 +35,15 @@ export default function AdminPanel({
   // States
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<Order | null>(null);
   const [isPreviewingPrintReadyBook, setIsPreviewingPrintReadyBook] = useState<Order | null>(null);
+  const [adminUserListTab, setAdminUserListTab] = useState<'writers' | 'readers'>('writers');
+
+  const MOCK_READERS = [
+    { id: 'usr-1', name: 'মোঃ হাসিবুর রহমান', username: 'hasib_99', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', currentCoins: 120, spentAmount: 150, totalCoinsPurchased: 300, printCartCount: 2, bio: 'বই পড়তে ভালোবাসি, বিশেষ করে বিজ্ঞান ও প্রযুক্তি বিষয়ক কলাম।', savedArticlesCount: 5 },
+    { id: 'usr-2', name: 'সাফিয়া পারভীন', username: 'safia_p', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', currentCoins: 45, spentAmount: 50, totalCoinsPurchased: 100, printCartCount: 0, bio: 'কলামিস্টদের নিয়মিত সামাজিক প্রবন্ধগুলো পড়তে ভালো লাগে।', savedArticlesCount: 8 },
+    { id: 'usr-3', name: 'আরিফ রায়হান', username: 'raihan_arif', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', currentCoins: 350, spentAmount: 300, totalCoinsPurchased: 600, printCartCount: 5, bio: 'সাহিত্য ও অর্থনীতির মেলবন্ধন আমার লেখার প্রতি আকর্ষণ সৃষ্টি করেছে।', savedArticlesCount: 12 },
+    { id: 'usr-4', name: 'তানজিনা আক্তার লিমা', username: 'tanjina_lima', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', currentCoins: 15, spentAmount: 20, totalCoinsPurchased: 50, printCartCount: 1, bio: 'ইতিহাস ও রাজনীতি বিশ্লেষণী কলামের একনিষ্ঠ পাঠক।', savedArticlesCount: 3 },
+    { id: 'usr-5', name: 'শাফায়েত হোসেন জিসান', username: 'shafayet_jisan', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', currentCoins: 90, spentAmount: 100, totalCoinsPurchased: 200, printCartCount: 0, bio: 'সৃজনশীল লেখার মাধ্যমে সমাজ পরিবর্তনের প্রতি বিশ্বস্ত কলাম পাঠক।', savedArticlesCount: 7 }
+  ];
 
   // Stats Counters
   const totalCompletedOrders = orders.filter(o => o.status === 'Delivered').length;
@@ -335,22 +344,172 @@ export default function AdminPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            className="space-y-6 w-full"
           >
-            {writers.map((w) => (
-              <div key={w.id} className="bg-white p-5 rounded-xl border border-slate-250 flex items-center gap-4">
-                <img src={w.avatar} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-indigo-500 p-0.5" />
-                <div className="space-y-1">
-                  <h4 className="font-bold text-gray-800 text-sm">{w.name}</h4>
-                  <p className="text-xs text-gray-400">@{w.username} • লেখক অ্যাকাউন্ট</p>
-                  <p className="text-[11px] text-gray-500 leading-relaxed max-w-xs">{w.bio}</p>
-                  <div className="flex gap-4 text-[10px] text-gray-400 font-mono">
-                    <span>অনুসারী: {w.followers}</span>
-                    <span>রচনাবলী: {articles.filter(a => a.writerId === w.id).length}</span>
-                  </div>
+            {/* Dual List secondary tabs switch */}
+            <div className="flex bg-slate-100 p-1 rounded-xl max-w-md gap-1">
+              <button
+                type="button"
+                onClick={() => setAdminUserListTab('writers')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                  adminUserListTab === 'writers'
+                    ? 'bg-white text-slate-800 shadow-3xs'
+                    : 'text-slate-500 hover:text-slate-850'
+                }`}
+              >
+                অনুমোদিত কলামিস্ট লেখকবৃন্দ ({writers.length} জন)
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminUserListTab('readers')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                  adminUserListTab === 'readers'
+                    ? 'bg-white text-slate-800 shadow-3xs'
+                    : 'text-slate-500 hover:text-slate-850'
+                }`}
+              >
+                নিবন্ধিত পাঠক/ইউজার তালিকা ({MOCK_READERS.length} জন)
+              </button>
+            </div>
+
+            {adminUserListTab === 'writers' ? (
+              <div className="space-y-4">
+                <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl text-xs text-amber-900 leading-normal">
+                  💡 <b>র‍্যাঙ্কিং ও রেটিং লজিক:</b> লেখকদের মোট জেনারেটকৃত প্রকাশনা লিপি, অনুসারী দল ও অর্জিত রয়্যালটি কয়েন ব্যালেন্সের ওপর ভিত্তি করে এই গ্লোবাল লেখক স্কোরবোর্ড র‍্যাঙ্ক ও তারকা রেটিং অবিরত হিসাব করা হয়। (১০ম র‍্যাঙ্কের পরের লেখকদেরও সম্পূর্ণ তালিকা অনুযায়ী র‍্যাঙ্ক ক্রমানুসারে পাওয়া যাবে)।
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(() => {
+                    const writersWithStats = writers.map((w) => {
+                      const totalPubs = articles.filter(a => a.writerId === w.id).length;
+                      const coins = w.coinBalance || 0;
+                      const followers = w.followers || 0;
+                      const score = (totalPubs * 20) + (coins * 5) + (followers * 2);
+                      const ratingDec = 3.8 + Math.min(1.2, (score / 250) * 1.2);
+                      return {
+                        ...w,
+                        totalPubs,
+                        coins,
+                        followers,
+                        score,
+                        ratingDec: parseFloat(ratingDec.toFixed(1))
+                      };
+                    });
+
+                    // Sort by score to get global rank positions
+                    const sortedWriters = [...writersWithStats].sort((a, b) => b.score - a.score);
+
+                    return sortedWriters.map((w, index) => {
+                      const globalRank = index + 1;
+                      return (
+                        <div key={w.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-4xs hover:shadow-3xs transition-shadow flex items-start gap-4 relative overflow-hidden">
+                          {/* Rank Ribbon / Badge */}
+                          <div className={`absolute top-0 right-0 px-3.5 py-1 text-[10px] font-black rounded-bl-xl uppercase tracking-wider ${
+                            globalRank === 1
+                              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                              : globalRank === 2
+                              ? 'bg-slate-200 text-slate-800 border-l border-b border-slate-300'
+                              : globalRank === 3
+                              ? 'bg-amber-705 text-white'
+                              : 'bg-slate-50 text-slate-500 border-l border-b border-slate-200'
+                          }`}>
+                            #র‍্যাঙ্ক {globalRank}
+                          </div>
+
+                          <img src={w.avatar} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-indigo-600 shadow-3xs p-0.5 shrink-0" />
+                          <div className="space-y-2 flex-1">
+                            <div>
+                              <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 leading-tight">
+                                {w.name}
+                              </h4>
+                              <p className="text-[10px] text-indigo-600 font-bold font-mono">@{w.username} • প্রফেশনাল লেখক</p>
+                            </div>
+                            
+                            <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2 italic pr-6">"{w.bio || 'সৃজনশীল লেখার মাধ্যমে সমাজ বদলে নিরন্তর বিশ্বাসী কলাম লেখক।'}"</p>
+                            
+                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                              <div className="space-y-0.5">
+                                <span className="text-[9px] text-slate-400 font-bold block uppercase">মোট প্রকাশনা</span>
+                                <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1 font-mono">
+                                  📖 {w.totalPubs} টি নিবন্ধ
+                                </span>
+                              </div>
+                              <div className="space-y-0.5">
+                                <span className="text-[9px] text-slate-400 font-bold block uppercase">লেখক রেটিং</span>
+                                <span className="text-xs font-black text-amber-500 flex items-center gap-0.5 font-mono">
+                                  ⭐ {w.ratingDec} / 5.0
+                                </span>
+                              </div>
+                              <div className="space-y-0.5 pt-1">
+                                <span className="text-[9px] text-slate-400 font-bold block uppercase">অর্জিত কয়েন রয়্যালটি</span>
+                                <span className="text-xs font-extrabold text-emerald-600 flex items-center gap-0.5 font-mono">
+                                  🪙 {w.coins} কয়েন
+                                </span>
+                              </div>
+                              <div className="space-y-0.5 pt-1">
+                                <span className="text-[9px] text-slate-400 font-bold block uppercase">অনুসারী (Followers)</span>
+                                <span className="text-xs font-extrabold text-indigo-700 flex items-center gap-0.5 font-mono">
+                                  👥 {w.followers} জন
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-indigo-50 border border-indigo-150/10 p-4 rounded-xl text-xs text-indigo-900 leading-normal">
+                  💻 <b>পাঠক ডিরেক্টরি পরিচিতি:</b> প্ল্যাটফর্মে নিবন্ধিত সক্রিয় পাঠক সদস্যবৃন্দের তালিকা নিচে প্রদর্শিত হলো। তাদের ওয়ালেট রিচার্জ ও রিডার কয়েন ব্যবহার হিস্ট্রি এখান থেকে ট্র্যাক করতে পারবেন।
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {MOCK_READERS.map((r) => (
+                    <div key={r.id} className="bg-white p-5 rounded-2xl border border-slate-205 shadow-4xs flex items-start gap-4">
+                      <img src={r.avatar} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-slate-200 shrink-0" />
+                      <div className="space-y-2 flex-1">
+                        <div>
+                          <h4 className="font-extrabold text-slate-900 text-sm leading-tight">{r.name}</h4>
+                          <p className="text-[10px] text-indigo-650 font-semibold font-mono">@{r.username} • প্রিমিয়াম পাঠক</p>
+                        </div>
+
+                        <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-1">{r.bio}</p>
+
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                          <div className="space-y-0.5">
+                            <span className="text-[9px] text-slate-400 font-bold block uppercase">বর্তমান ওয়ালেট ব্যালেন্স</span>
+                            <span className="text-xs font-black text-amber-500 flex items-center gap-0.5 font-mono">
+                              🪙 {r.currentCoins} কয়েন
+                            </span>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="text-[9px] text-slate-400 font-bold block uppercase">জীবনকালীন রিচার্জ</span>
+                            <span className="text-xs font-bold text-slate-800 font-mono">
+                              ৳{r.spentAmount} টাকা
+                            </span>
+                          </div>
+                          <div className="space-y-0.5 pt-1">
+                            <span className="text-[9px] text-slate-400 font-bold block uppercase">প্রিন্ট কার্ট রানিং</span>
+                            <span className="text-xs font-bold text-indigo-700 font-mono">
+                              📦 {r.printCartCount} টি অর্ডার
+                            </span>
+                          </div>
+                          <div className="space-y-0.5 pt-1">
+                            <span className="text-[9px] text-slate-400 font-bold block uppercase">সংরক্ষিত প্রবন্ধ</span>
+                            <span className="text-xs font-bold text-slate-805 font-mono">
+                              🔖 {r.savedArticlesCount} টি রচনা
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 

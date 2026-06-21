@@ -119,6 +119,10 @@ export default function ReaderPanel({
   const [profileActiveTab, setProfileActiveTab] = useState<'shelf' | 'writer'>('shelf');
   const [shuffledWriters, setShuffledWriters] = useState<Writer[]>([]);
 
+  // Homepage coin filtering states
+  const [coinFilterType, setCoinFilterType] = useState<'all' | 'free' | '10' | '30' | 'custom'>('all');
+  const [customCoinLimit, setCustomCoinLimit] = useState<string>('');
+
   useEffect(() => {
     if (writers && writers.length > 0) {
       const arr = [...writers];
@@ -252,7 +256,8 @@ export default function ReaderPanel({
 
   // Filters articles
   const filteredArticles = articles.filter(art => {
-    if (art.status !== 'published') return false;
+    // Hidden articles should not be visible to reader
+    if (art.status !== 'published' || art.hidden) return false;
 
     const matchesSearch = 
       art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -263,7 +268,23 @@ export default function ReaderPanel({
     const matchesCategory = selectedCategory === 'সব' || art.category === selectedCategory;
     const matchesWriter = selectedWriter === 'সব' || art.writerId === selectedWriter;
 
-    return matchesSearch && matchesCategory && matchesWriter;
+    // Coin requirements filter
+    let matchesCoin = true;
+    const coins = art.requiredCoins || 0;
+    if (coinFilterType === 'free') {
+      matchesCoin = coins === 0;
+    } else if (coinFilterType === '10') {
+      matchesCoin = coins > 0 && coins <= 10;
+    } else if (coinFilterType === '30') {
+      matchesCoin = coins > 0 && coins <= 30;
+    } else if (coinFilterType === 'custom') {
+      const parsedLimit = parseInt(customCoinLimit, 10);
+      if (!isNaN(parsedLimit)) {
+        matchesCoin = coins <= parsedLimit;
+      }
+    }
+
+    return matchesSearch && matchesCategory && matchesWriter && matchesCoin;
   });
 
   const handleOpenFolderModal = (artId: string) => {
@@ -486,7 +507,7 @@ export default function ReaderPanel({
 
               {/* 1. Thin Category Capsule Row */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                {['সব', 'সাহিত্য', 'বিজ্ঞান', 'রাজনীতি', 'অর্থনীতি', 'ধর্ম', 'দর্শন'].map((cat) => (
+                {['সব', 'সাহিত্য', 'বিজ্ঞান', 'রাজনীতি', 'অর্থনীতি', 'ধর্ম', 'दर्शन'].map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
@@ -499,6 +520,61 @@ export default function ReaderPanel({
                     {cat === 'সব' ? 'সব লেখা' : cat}
                   </button>
                 ))}
+              </div>
+
+              {/* Coin Filter Minimal Row */}
+              <div id="coin-filter-bar" className="flex flex-wrap items-center gap-2 pt-2 pb-1 bg-slate-50/50 px-3 rounded-xl border border-slate-200/60 mt-1">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
+                  <Coins className="w-3.5 h-3.5 text-amber-500" /> কয়েন ফিল্টার:
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[
+                    { label: 'সব লেখা', value: 'all' },
+                    { label: 'ফ্রি', value: 'free' },
+                    { label: '≤১০ কয়েন', value: '10' },
+                    { label: '≤৩০ কয়েন', value: '30' }
+                  ].map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => {
+                        setCoinFilterType(item.value as any);
+                      }}
+                      className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-md border transition-all ${
+                        coinFilterType === item.value
+                          ? 'bg-amber-500 text-white border-amber-600 shadow-4xs font-bold'
+                          : 'bg-white text-slate-650 border-slate-200 hover:bg-slate-50 hover:text-slate-800'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+
+                  {/* Custom Coin Input Option */}
+                  <div className={`flex items-center gap-1 bg-white border rounded-md px-2 py-0.5 ${
+                    coinFilterType === 'custom' ? 'border-amber-400 ring-1 ring-amber-400/25' : 'border-slate-200'
+                  }`}>
+                    <button
+                      type="button"
+                      onClick={() => setCoinFilterType('custom')}
+                      className={`text-[10px] font-bold transition-all ${
+                        coinFilterType === 'custom' ? 'text-amber-600 font-black' : 'text-slate-500'
+                      }`}
+                    >
+                      কাস্টম (≤):
+                    </button>
+                    <input
+                      type="number"
+                      value={customCoinLimit}
+                      onChange={(e) => {
+                        setCustomCoinLimit(e.target.value);
+                        setCoinFilterType('custom');
+                      }}
+                      placeholder="মান লিখুন"
+                      className="w-12 p-0 text-[10px] font-bold bg-transparent text-slate-800 focus:outline-hidden text-center placeholder-slate-400 border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* 2. Top-rated & Randomized Writers Horizontal Row */}
@@ -581,14 +657,25 @@ export default function ReaderPanel({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredArticles.map((art) => {
+                {filteredArticles.map((art, index) => {
                   const isInCart = cart.some(item => item.articleId === art.id);
                   const isSaved = savedArticles.includes(art.id);
+                  
+                  // Deterministic premium varying gray backgrounds for cards
+                  const grayShades = [
+                    'bg-slate-50 border-slate-200/90 hover:bg-slate-100/70 hover:border-slate-350/60',
+                    'bg-zinc-100/40 border-zinc-200 hover:bg-zinc-100/80 hover:border-zinc-300',
+                    'bg-stone-50 border-stone-200 hover:bg-stone-100/70 hover:border-stone-300',
+                    'bg-gray-100/30 border-gray-200 hover:bg-gray-100/80 hover:border-gray-250',
+                    'bg-neutral-50 border-neutral-200/90 hover:bg-neutral-100/70 hover:border-neutral-350/60',
+                    'bg-slate-100/30 border-slate-200 hover:bg-slate-100/70 hover:border-slate-300'
+                  ];
+                  const chosenShade = grayShades[index % grayShades.length];
                   
                   return (
                     <div 
                       key={art.id} 
-                      className="bg-gray-50/80 border border-gray-250/50 p-5 rounded-2xl flex flex-col justify-between hover:bg-gray-100/60 hover:border-gray-350/50 hover:shadow-2xs transition-all duration-200 group"
+                      className={`${chosenShade} p-5 rounded-2xl flex flex-col justify-between hover:shadow-2xs transition-all duration-200 group`}
                     >
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
@@ -1291,7 +1378,7 @@ export default function ReaderPanel({
                                     প্রসেসিং হচ্ছে...
                                   </>
                                 ) : (
-                                  `টাকা {grandTotal.toFixed(1)} পেমেন্ট করুন`
+                                  `টাকা ${grandTotal.toFixed(1)} পেমেন্ট করুন`
                                 )}
                               </button>
                             </form>
@@ -1361,8 +1448,6 @@ export default function ReaderPanel({
                                       maxLength={4}
                                       value={simOTP}
                                       onChange={(e) => setSimOTP(e.target.value)}
-                                      placeholder="ভেরিফিকেশন কোডটি দিন"
-                                      className="w-full p-2.5 text-sm text-center border border-gray-200 rounded-lg font-mono focus:ring-1 focus:ring-emerald-550 focus:outline-hidden"
                                     />
                                   </div>
                                   <button
@@ -1380,9 +1465,9 @@ export default function ReaderPanel({
                                 <div className="space-y-3">
                                   <div className="text-center">
                                     <p className="text-[11px] text-gray-500 leading-relaxed font-semibold">
-                                      আপনার {paymentMethod === 'bkash' ? 'বিকাশ' : 'নগদ'} অ্যাকাউন্টের গোপন পিন নম্বর দিন
+                                      আপনার ${paymentMethod === 'bkash' ? 'বিকাশ' : 'নগদ'} অ্যাকাউন্টের গোপন পিন নম্বর দিন
                                     </p>
-                                    <p className="text-[10px] text-[10px] text-red-500 mt-0.5">গোপনীয়তা নোট: এটি একটি সুরক্ষিত মক পেমেন্ট গেটওয়ে কোড। টেস্ট করতে যেকোনো ৪ সংখ্যা দিতে পারেন।</p>
+                                    <p className="text-[10px] text-red-500 mt-0.5">গোপনীয়তা নোট: এটি একটি সুরক্ষিত মক পেমেন্ট গেটওয়ে কোড। টেস্ট করতে যেকোনো ৪ সংখ্যা দিতে পারেন।</p>
                                   </div>
                                   <div className="space-y-1">
                                     <input
@@ -1392,7 +1477,7 @@ export default function ReaderPanel({
                                       value={simPIN}
                                       onChange={(e) => setSimPIN(e.target.value)}
                                       placeholder="এখানে আপনার পিন কোড দিন"
-                                      className="w-full p-2.5 text-sm text-center border border-gray-200 rounded-lg font-mono focus:ring-1 focus:ring-emerald-550 focus:outline-hidden"
+                                      className="w-full p-2.5 text-sm text-center border border-gray-200 rounded-lg font-mono focus:ring-1 focus:ring-emerald-500 focus:outline-hidden"
                                     />
                                   </div>
                                   <button
@@ -1418,7 +1503,7 @@ export default function ReaderPanel({
                         )}
                       </div>
 
-                      <div className="flex justify-between items-center pt-3 border-t border-gray-55">
+                      <div className="flex justify-between items-center pt-3 border-t border-gray-50">
                         <button
                           type="button"
                           onClick={() => setCheckoutStep('shipping')}
@@ -1458,7 +1543,7 @@ export default function ReaderPanel({
                         </div>
 
                         <div className="border-t border-dashed border-gray-100 pt-3 space-y-2">
-                          <div className="flex justify-between items-center text-xs text-gray-600">
+                          <div className="flex justify-between items-center text-xs text-gray-650">
                             <span>পৃষ্ঠা খরচ (মোট পাতা × ১.৫ টাকা):</span>
                             <span className="font-mono text-gray-700">{pageCost.toFixed(1)} ৳</span>
                           </div>
@@ -1518,37 +1603,27 @@ export default function ReaderPanel({
                   <p className="flex justify-between"><b>শিপিং এলাকা:</b> <span>{deliveryRegion === 'Dhaka' ? 'ঢাকার ভিতরে' : 'ঢাকার বাইরে'}</span></p>
                 </div>
 
-                 <div className="bg-amber-50/35 border border-amber-500/10 p-3 rounded-lg text-[10px] text-amber-800 leading-relaxed text-justify">
-                  💡 <b>অ্যাডমিন প্যানেল আপডেট:</b> এখন স্ক্রিনের ওপরের নেভিগেশন বার থেকে "অ্যাডমিন প্যানেল (Mngt Panel)" ট্যাব ক্লিক করে অর্ডারটির জন্য জেনারেট হওয়া <b>"প্রিন্ট-রেডি পিডিএফ" (Print-Ready PDF)</b> ফাইল এবং বুক কভার লাইভ দেখতে পারবেন!
+                <div className="bg-amber-50/35 border border-amber-500/10 p-3 rounded-lg text-[10px] text-amber-800 leading-relaxed text-justify mt-4">
+                   💡 <b>অ্যাডমিন প্যানেল আপডেট:</b> এখন স্ক্রিনের ওপরের নেভিগেশন বার থেকে "অ্যাডমিন প্যানেল (Mngt Panel)" ট্যাব ক্লিক করে অর্ডারটির জন্য জেনারেট হওয়া <b>"প্রিন্ট-অর্ডার"</b> আপডেট করতে পারবেন।
                 </div>
 
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setIsPreviewingReaderPDF(true)}
-                    className="w-full py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5"
-                  >
-                    <FileText className="w-4 h-4" />
-                    তৈরিকৃত পিডিএফ (PDF Preview) দেখুন
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setCheckoutStep('cart');
-                      setActiveTab('discover');
-                    }}
-                    className="w-full py-2.5 bg-gray-150 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-bold transition-all"
-                  >
-                    নতুন রচনার খোঁজে ফিরে যান
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClearCart();
+                    setCheckoutStep('cart');
+                    setActiveTab('discover');
+                  }}
+                  className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+                >
+                  নতুন লেখা খুঁজুন (Discover Panel)
+                </button>
               </motion.div>
             )}
           </motion.div>
         )}
 
-
-
-        {/* TAB: My Profile / Writer Panel & Bookshelf */}
+        {/* TAB 2.5: My Profile Tab */}
         {activeTab === 'my-profile' && (
           <motion.div
             key="my-profile"
@@ -1557,143 +1632,20 @@ export default function ReaderPanel({
             exit={{ opacity: 0 }}
             className="space-y-6"
           >
-            {/* Custom nested subtabs inside Profile */}
-            <div className="bg-slate-100 border border-slate-200/80 p-1 rounded-xl flex gap-2">
-              <button
-                type="button"
-                onClick={() => setProfileActiveTab('shelf')}
-                className={`flex-1 py-2 text-xs md:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                  profileActiveTab === 'shelf'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-850 hover:bg-slate-200/50'
-                }`}
-              >
-                <Bookmark className="w-4 h-4 text-emerald-500 fill-current" />
-                আমার বুকশেলফ ({savedArticles.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setProfileActiveTab('writer')}
-                className={`flex-1 py-2 text-xs md:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                  profileActiveTab === 'writer'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-855 hover:bg-slate-200/50'
-                }`}
-              >
-                <FileText className="w-4 h-4 text-amber-500" />
-                আমার লেখক প্যানেল ও প্রোফাইল
-              </button>
-            </div>
-
-            {profileActiveTab === 'shelf' ? (
-              <div className="space-y-6">
-                <div className="bg-gradient-to-r from-teal-50 to-emerald-50 p-5 rounded-2xl border border-teal-100/60 shadow-3xs">
-                  <h2 className="font-extrabold text-teal-900 text-base md:text-lg flex items-center gap-2">
-                    <Bookmark className="w-5 h-5 text-teal-600 fill-current" />
-                    আপনার ব্যক্তিগত বুকশেলফ
-                  </h2>
-                  <p className="text-xs text-teal-700 mt-1 leading-relaxed">
-                    পড়ার সুবিধার্থে হোমপেজে স্টারে ক্লিক করে পরে পড়ার এবং কাস্টম ফোল্ডারের রচনার তালিকা এখানে পাবেন।
-                  </p>
-                </div>
-
-                {/* Read Later Section */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-gray-700 text-xs bg-gray-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-gray-200/60">
-                      📁 Read Later (পরে পড়ার তালিকায়) 
-                      <span className="font-mono text-xs bg-white px-1.5 py-0.5 rounded-md text-indigo-700 border border-gray-200">({savedArticles.length})</span>
-                    </h3>
-                  </div>
-
-                  {savedArticles.length === 0 ? (
-                    <div className="bg-gray-50 border border-dashed border-gray-200 p-8 text-center text-xs text-gray-400 rounded-xl">
-                      পরে পড়ার জন্য কোনো কন্টেন্ট বুকমার্ক করা হয়নি। হোমপেজে লেখার পাশে স্টারে ক্লিক করুন।
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {articles.filter(a => savedArticles.includes(a.id)).map(art => (
-                        <div key={art.id} className="bg-white p-4 rounded-xl border border-gray-150 flex justify-between items-center gap-3 hover:shadow-3xs transition-all">
-                          <div>
-                            <h4 className="font-bold text-gray-800 text-xs leading-snug line-clamp-1">{art.title}</h4>
-                            <p className="text-[10px] text-gray-500 mt-0.5">লেখক: {art.writerName}  •  {art.category}</p>
-                          </div>
-                          <div className="flex gap-1 shrink-0">
-                            <button
-                              onClick={() => setViewingArticle(art)}
-                              className="p-1 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-750 text-[10px] font-bold rounded-md transition-all border border-indigo-100"
-                            >
-                              পড়ুন
-                            </button>
-                            <button
-                              onClick={() => handleToggleReadLater(art.id)}
-                              className="p-1.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-md transition-all"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Render Custom Folders */}
-                <div className="mt-8 space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-gray-800 text-xs">📁 কাস্টম সংকলন ফোল্ডারসমূহ</h3>
-                  </div>
-
-                  {Object.keys(customFolders).length === 0 ? (
-                    <div className="bg-gray-50/50 p-10 text-center text-xs text-gray-400 border border-dashed border-gray-200 rounded-xl">
-                      এখনো কোনো কাস্টম ফোল্ডার তৈরি করা হয়নি। লেখা বুকমার্ক করার সময় ফোল্ডার বানাতে পারবেন।
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {Object.entries(customFolders).map(([folderName, ids]) => (
-                        <div key={folderName} className="space-y-3 bg-white p-4 rounded-xl border border-gray-200">
-                          <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                            <h4 className="font-bold text-xs text-indigo-700 flex items-center gap-1.5">
-                              📂 {folderName} 
-                              <span className="font-mono text-[10px] bg-indigo-50 text-indigo-805 px-1.5 py-0.5 rounded-full border border-indigo-100/40">
-                                {ids.length} টি রচনা
-                              </span>
-                            </h4>
-                          </div>
-
-                          {ids.length === 0 ? (
-                            <p className="text-[11px] text-gray-400 py-2">ফোল্ডারটি ফাঁকা রয়েছে।</p>
-                          ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {articles.filter(a => ids.includes(a.id)).map(art => (
-                                <div key={art.id} className="bg-gray-50/50 p-3 rounded-lg flex justify-between items-center gap-2">
-                                  <div>
-                                    <h5 className="font-semibold text-gray-800 text-xs line-clamp-1">{art.title}</h5>
-                                    <p className="text-[10px] text-gray-400">{art.writerName} • {art.category}</p>
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <button
-                                      onClick={() => setViewingArticle(art)}
-                                      className="text-[10px] p-1 px-1.5 bg-white text-indigo-650 font-bold border border-slate-205 rounded-sm hover:bg-gray-100"
-                                    >
-                                      পড়ুন
-                                    </button>
-                                    <button
-                                      onClick={() => onToggleSaveArticle(art.id, folderName)}
-                                      className="text-gray-400 hover:text-rose-505 p-1"
-                                    >
-                                      <Trash2 className="w-3" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+            {!currentWriter ? (
+              <div className="bg-white p-8 rounded-2xl border border-dashed border-gray-200 text-center space-y-4 max-w-md mx-auto">
+                <FileText className="w-12 h-12 text-slate-400 mx-auto" />
+                <h3 className="text-sm font-bold text-gray-800">আপনি এখনও লেখক হিসেবে নিবন্ধিত নন!</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  নিজের প্রবন্ধ বা কলাম প্রকাশ করতে এবং রিডার কয়েন থেকে রয়্যালটি আয় করতে আজই লেখক হিসেবে রেজিস্ট্রেশন করুন।
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('become-writer')}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm"
+                >
+                  লেখক হতে আবেদন করুন
+                </button>
               </div>
             ) : (
               <WriterPanel
@@ -1707,9 +1659,6 @@ export default function ReaderPanel({
             )}
           </motion.div>
         )}
-
-
-
         {/* TAB 5: Author Profiles */}
         {activeTab === 'author-profiles' && (
           <motion.div
@@ -1751,72 +1700,64 @@ export default function ReaderPanel({
                         }}
                         className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors"
                       >
-                        অনুগমন করুন (Follow +)
+                        অনুগমন করুন (Follow)
                       </button>
                     </div>
-
-                    <p className="text-xs md:text-sm text-gray-600 leading-relaxed text-justify bg-gray-50 p-4 rounded-xl border border-gray-200 border-dashed">
-                      {selectedAuthorForProfile.bio || 'এই লেখক এখনও কোনো বায়ো যোগ করেননি।'}
+                    <p className="text-xs text-gray-650 leading-relaxed">
+                      {selectedAuthorForProfile.bio || 'সৃজনশীল লেখার মাধ্যমে সমাজ বদলে নিরন্তর বিশ্বাসী কলাম লেখক।'}
                     </p>
-
-                    <div className="flex gap-4 pt-1 justify-center md:justify-start">
-                      <div className="text-center bg-indigo-50/50 px-4 py-2 rounded-xl border border-indigo-100 min-w-[100px]">
-                        <span className="block font-mono text-base font-bold text-indigo-700">{selectedAuthorForProfile.followers || 0}</span>
-                        <span className="text-[10px] text-indigo-600 font-semibold">অনুগামী</span>
+                    <div className="flex gap-4 text-xs font-semibold text-slate-500 pt-2 justify-center md:justify-start">
+                      <div>
+                        <span className="font-bold text-slate-900">{articles.filter(a => a.writerId === selectedAuthorForProfile.id && a.status === 'published').length}</span> প্রকাশনা
                       </div>
-                      <div className="text-center bg-purple-50/50 px-4 py-2 rounded-xl border border-purple-150 min-w-[100px]">
-                        <span className="block font-mono text-base font-bold text-purple-700">
-                          {articles.filter(a => a.writerId === selectedAuthorForProfile.id && a.status === 'published').length || 0}
-                        </span>
-                        <span className="text-[10px] text-purple-600 font-semibold flex items-center justify-center gap-0.5">
-                          📝 কলাম প্রকাশ
-                        </span>
+                      <div>
+                        <span className="font-bold text-slate-950">{selectedAuthorForProfile.followers || 0}</span> অনুগামী
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Author's specific posts */}
-                <div className="space-y-4">
-                  <h3 className="font-bold text-slate-800 text-base">লেখক এর চমৎকার প্রকাশনাসমূহ</h3>
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                  <h3 className="font-bold text-gray-900 text-xs flex items-center gap-1.5">
+                    📖 লেখকের প্রকাশিত রচনাবলি:
+                  </h3>
+                  
                   {articles.filter(a => a.writerId === selectedAuthorForProfile.id && a.status === 'published').length === 0 ? (
-                    <p className="text-xs text-gray-400 italic py-4">এই লেখকের প্রোফাইলে কোনো লেখা পাওয়া যায়নি।</p>
+                    <p className="text-xs text-gray-500 py-4 italic">লেখকের কোনো লেখা এখনো প্রকাশিত হয়নি।</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {articles
-                        .filter(a => a.writerId === selectedAuthorForProfile.id && a.status === 'published')
-                        .map(post => {
-                          const isCoinLocked = (post.requiredCoins || 0) > 0;
-                          return (
-                            <div key={post.id} className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-4xs hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
-                              <div className="space-y-1.5">
-                                <div className="flex justify-between items-center">
-                                  <span className="bg-slate-100 text-slate-700 text-[9px] font-bold px-2 py-0.5 rounded-full">{post.category}</span>
-                                  {isCoinLocked && (
-                                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-amber-200">
-                                      🔑 {post.requiredCoins} কয়েন
-                                    </span>
-                                  )}
-                                </div>
-                                <h4 
-                                  onClick={() => setViewingArticle(post)}
-                                  className="font-extrabold text-gray-900 hover:text-indigo-600 cursor-pointer text-sm leading-snug line-clamp-2"
-                                >
-                                  {post.title}
-                                </h4>
-                                <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed text-justify">
-                                  {post.content}
-                                </p>
+                      {articles.filter(a => a.writerId === selectedAuthorForProfile.id && a.status === 'published').map((post) => {
+                        const isCoinLocked = (post.requiredCoins || 0) > 0;
+                        return (
+                          <div key={post.id} className="border border-slate-100 p-4 rounded-xl space-y-3 hover:bg-slate-50/50 transition-colors flex flex-col justify-between">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="bg-indigo-50 text-indigo-700 text-[9px] font-black px-2 py-0.5 rounded-full">{post.category}</span>
+                                {isCoinLocked && (
+                                  <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-amber-200">
+                                    🔑 {post.requiredCoins} কয়েন
+                                  </span>
+                                )}
                               </div>
-                              <button
+                              <h4 
                                 onClick={() => setViewingArticle(post)}
-                                className="w-full py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold rounded-lg transition-colors"
+                                className="font-extrabold text-gray-900 hover:text-indigo-600 cursor-pointer text-sm leading-snug line-clamp-2"
                               >
-                                {isCoinLocked && !unlockedArticles.includes(post.id) ? 'প্রিভিউ পড়ুন' : 'বিস্তারিত প্রবন্ধ পড়ুন'}
-                              </button>
+                                {post.title}
+                              </h4>
+                              <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed text-justify">
+                                {post.content}
+                              </p>
                             </div>
-                          );
-                        })}
+                            <button
+                              onClick={() => setViewingArticle(post)}
+                              className="w-full py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold rounded-lg transition-colors mt-2"
+                            >
+                              {isCoinLocked && !unlockedArticles.includes(post.id) ? 'প্রিভিউ পড়ুন' : 'বিস্তারিত প্রবন্ধ পড়ুন'}
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
