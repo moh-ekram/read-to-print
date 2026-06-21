@@ -417,17 +417,6 @@ export default function App() {
               হোম পেজ
             </button>
             <button
-              onClick={() => setUserRole('writer')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                userRole === 'writer'
-                  ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-black/5'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <User className="w-3.5 h-3.5 text-indigo-600" />
-              লেখক প্যানেল
-            </button>
-            <button
               onClick={handleAdminTabClick}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                 userRole === 'admin'
@@ -469,7 +458,7 @@ export default function App() {
           
           <div className="flex flex-wrap gap-2 items-center">
             <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-xs">
-              চলতি ভূমিকা: {userRole === 'reader' ? 'পাঠক (Reader)' : userRole === 'writer' ? 'লেখক (Writer)' : 'ম্যানেজমেন্ট (Admin)'}
+              চলতি ভূমিকা: {userRole === 'reader' ? 'পাঠক (Reader)' : 'ম্যানেজমেন্ট (Admin)'}
             </span>
             <span className="text-slate-300">|</span>
             <span className="text-[11px] text-slate-400">বিকাশ/নগদ/কার্ড গেটওয়ে লাইভ টেস্টেড</span>
@@ -506,13 +495,7 @@ export default function App() {
                 onAwardCoinsToWriter={handleAwardCoinsToWriter}
                 onAddWriterApplication={handleAddWriterApplication}
                 writerApplications={writerApplications}
-              />
-            )}
-
-            {userRole === 'writer' && (
-              <WriterPanel
                 currentWriter={currentWriter}
-                articles={articles}
                 onUpdateWriter={handleUpdateWriter}
                 onAddArticle={handleAddArticle}
                 onDeleteArticle={handleDeleteArticle}

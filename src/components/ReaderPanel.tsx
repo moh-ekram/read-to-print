@@ -6,6 +6,7 @@ import {
   Layers, Settings, Sparkles, User, Printer, Eye, Share2, Info, Newspaper, Download, FileText, Coins, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import WriterPanel from './WriterPanel';
 
 const NEWSPAPER_ARTICLES = [
   {
@@ -78,6 +79,11 @@ interface ReaderPanelProps {
   onAwardCoinsToWriter: (writerId: string, amount: number) => void;
   onAddWriterApplication: (newApp: any) => void;
   writerApplications: any[];
+  currentWriter: Writer;
+  onUpdateWriter: (writer: Writer) => void;
+  onAddArticle: (article: Article) => void;
+  onDeleteArticle: (id: string) => void;
+  onUpdateArticle: (id: string, article: Partial<Article>) => void;
 }
 
 export default function ReaderPanel({
@@ -97,9 +103,14 @@ export default function ReaderPanel({
   setUnlockedArticles,
   onAwardCoinsToWriter,
   onAddWriterApplication,
-  writerApplications = []
+  writerApplications = [],
+  currentWriter,
+  onUpdateWriter,
+  onAddArticle,
+  onDeleteArticle,
+  onUpdateArticle
 }: ReaderPanelProps) {
-  const [activeTab, setActiveTab] = useState<'discover' | 'shelf' | 'print-cart' | 'coin-store' | 'author-profiles' | 'become-writer'>('discover');
+  const [activeTab, setActiveTab] = useState<'discover' | 'my-profile' | 'shelf' | 'print-cart' | 'coin-store' | 'author-profiles' | 'become-writer'>('discover');
   const [selectedAuthorForProfile, setSelectedAuthorForProfile] = useState<Writer | null>(null);
   const [viewingArticle, setViewingArticle] = useState<Article | null>(null);
   const [readingScrollProgress, setReadingScrollProgress] = useState(0);
@@ -356,6 +367,17 @@ export default function ReaderPanel({
         >
           <BookOpen className="w-4 h-4" />
           হোম পেজ
+        </button>
+        <button
+          onClick={() => { setActiveTab('my-profile'); }}
+          className={`px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+            activeTab === 'my-profile' 
+              ? 'border-indigo-600 text-indigo-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-800'
+          }`}
+        >
+          <User className="w-4 h-4 text-emerald-500" />
+          আমার প্রোফাইল
         </button>
         <button
           onClick={() => { setActiveTab('author-profiles'); setSelectedAuthorForProfile(null); }}
@@ -1640,6 +1662,28 @@ export default function ReaderPanel({
                 </div>
               </motion.div>
             )}
+          </motion.div>
+        )}
+
+
+
+        {/* TAB: My Profile / Writer Panel */}
+        {activeTab === 'my-profile' && (
+          <motion.div
+            key="my-profile"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-4"
+          >
+            <WriterPanel
+              currentWriter={currentWriter}
+              articles={articles}
+              onUpdateWriter={onUpdateWriter}
+              onAddArticle={onAddArticle}
+              onDeleteArticle={onDeleteArticle}
+              onUpdateArticle={onUpdateArticle}
+            />
           </motion.div>
         )}
 
