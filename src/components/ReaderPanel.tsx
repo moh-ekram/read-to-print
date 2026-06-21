@@ -3,7 +3,7 @@ import { Article, CartItem, Order, Writer } from '../types';
 import { 
   BookOpen, Search, Filter, Bookmark, ShoppingBag, ArrowRight, BookMarked, 
   Trash2, HelpCircle, MapPin, Phone, CreditCard, ChevronRight, CheckCircle2, 
-  Layers, Settings, Sparkles, User, Printer, Eye, Share2, Info, Newspaper, Download, FileText, Coins, Clock
+  Layers, Settings, Sparkles, User, Printer, Eye, Share2, Info, Newspaper, Download, FileText, Coins, Clock, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import WriterPanel from './WriterPanel';
@@ -114,6 +114,21 @@ export default function ReaderPanel({
   const [selectedAuthorForProfile, setSelectedAuthorForProfile] = useState<Writer | null>(null);
   const [viewingArticle, setViewingArticle] = useState<Article | null>(null);
   const [readingScrollProgress, setReadingScrollProgress] = useState(0);
+
+  // Profile inner subtabs and shuffled writers states
+  const [profileActiveTab, setProfileActiveTab] = useState<'shelf' | 'writer'>('shelf');
+  const [shuffledWriters, setShuffledWriters] = useState<Writer[]>([]);
+
+  useEffect(() => {
+    if (writers && writers.length > 0) {
+      const arr = [...writers];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      setShuffledWriters(arr);
+    }
+  }, [writers]);
 
   useEffect(() => {
     setReadingScrollProgress(0);
@@ -389,22 +404,6 @@ export default function ReaderPanel({
         >
           <User className="w-4 h-4 text-indigo-500" />
           লেখক প্রোফাইলসমূহ
-        </button>
-        <button
-          onClick={() => { setActiveTab('shelf'); setCheckoutStep('cart'); }}
-          className={`px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 ${
-            activeTab === 'shelf' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          <Bookmark className="w-4 h-4" />
-          আমার বুকশেলফ
-          {(savedArticles.length > 0) && (
-            <span className="bg-indigo-50 text-indigo-800 text-[10px] font-bold px-1.5 py-0.2 rounded-full font-mono">
-              {savedArticles.length}
-            </span>
-          )}
         </button>
         <button
           onClick={() => { setActiveTab('print-cart'); }}
@@ -701,140 +700,22 @@ export default function ReaderPanel({
                             }}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                               isInCart 
-                                ? 'bg-amber-105 text-amber-850 border border-amber-200 shadow-3xs' 
-                                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-3xs'
+                                ? 'bg-amber-100 text-amber-805 border border-amber-200' 
+                                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'
                             }`}
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                            {isInCart ? 'বই থেকে বাদ দিন' : 'অ্যাড টু প্রিন্ট'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </motion.div>
-        )}
-        {false && (
-          <div>
-            {filteredArticles.map((art) => {
-                  const isInCart = cart.some(item => item.articleId === art.id);
-                  const isSaved = savedArticles.includes(art.id);
-                  
-                  return (
-                    <div 
-                      key={art.id} 
-                      className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex flex-col justify-between hover:shadow-md transition-all group"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-2 py-0.5 bg-indigo-50 text-indigo-850 text-[10px] font-bold rounded-full">
-                              {art.category}
-                            </span>
-                            {art.subCategory && (
-                              <span className="text-[10px] text-gray-500 font-medium">/{art.subCategory}</span>
-                            )}
-                          </div>
-                          
-                          {/* Save & Bookmarking */}
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => handleToggleReadLater(art.id)}
-                              className={`p-1.5 rounded-md transition-all ${
-                                isSaved 
-                                  ? 'bg-indigo-50 text-indigo-750' 
-                                  : 'text-gray-400 hover:text-indigo-600 hover:bg-gray-50'
-                              }`}
-                              title={isSaved ? 'বুকশেলফ থেকে সরান' : 'বুকশেলফে সেভ করুন'}
-                            >
-                              <Bookmark className="w-3.5 h-3.5 fill-current" />
-                            </button>
-                            <button
-                              onClick={() => handleOpenFolderModal(art.id)}
-                              className="text-gray-400 hover:text-indigo-600 p-1.5 rounded-md hover:bg-gray-50 transition-all"
-                              title="কাস্টম ফোল্ডারে রাখুন"
-                            >
-                              <Layers className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <h3 
-                          onClick={() => setViewingArticle(art)}
-                          className="font-bold text-gray-800 text-lg group-hover:text-indigo-650 transition-colors cursor-pointer leading-snug"
-                        >
-                          {art.title}
-                        </h3>
-
-                        <div 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewAuthorProfileByWriterName(art.writerName);
-                          }}
-                          className="flex items-center gap-2 cursor-pointer hover:text-indigo-650 group/author"
-                        >
-                          <img 
-                            src={art.writerAvatar} 
-                            alt="" 
-                            className="w-5 h-5 rounded-full object-cover group-hover/author:ring-2 group-hover/author:ring-indigo-400 transition-all animate-fade-in" 
-                          />
-                          <span className="text-xs text-gray-750 font-bold group-hover/author:underline">{art.writerName}</span>
-                          <span className="text-gray-350 text-xs">•</span>
-                          <span className="text-[10px] text-gray-400 font-mono" onClick={(e) => e.stopPropagation()}>{art.wordCount} শব্দ</span>
-                        </div>
-
-                        <p className="text-xs text-gray-500 leading-relaxed text-justify line-clamp-3">
-                          {art.content.replace(/<[^>]*>/g, '')}
-                        </p>
-                      </div>
-
-                      <div className="flex justify-between items-center pt-4 border-t border-gray-55 mt-4">
-                        <button
-                          onClick={() => setViewingArticle(art)}
-                          className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5"
-                        >
-                          পুরো লেখা পড়ুন
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            if (isInCart) {
-                              onRemoveFromCart(art.id);
-                            } else {
-                              const isLocked = (art.requiredCoins || 0) > 0 && !unlockedArticles.includes(art.id);
-                              if (isLocked) {
-                                alert(`এই লেখাটি প্রিন্ট বাস্কেটে যুক্ত করতে হলে প্রথমে ${art.requiredCoins} কয়েন দিয়ে লেখাটি আনলক করতে হবে। দয়া করে লেখাটি পড়ে আনলক করে নিন।`);
-                                setViewingArticle(art);
-                                return;
-                              }
-                              onAddToCart({
-                                articleId: art.id,
-                                articleTitle: art.title,
-                                writerName: art.writerName,
-                                wordCount: art.wordCount,
-                                content: art.content
-                              });
-                            }
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                            isInCart 
-                              ? 'bg-amber-100 text-amber-805 border border-amber-200' 
-                              : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'
-                          }`}
                         >
                           <Printer className="w-3.5 h-3.5" />
                           {isInCart ? 'বই থেকে বাদ দিন' : 'অ্যাড টু প্রিন্ট'}
                         </button>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
               </div>
             )}
+          </motion.div>
+        )}
 
         {/* TAB 2: Shelf & Custom Folders */}
         {activeTab === 'shelf' && (
@@ -1667,23 +1548,163 @@ export default function ReaderPanel({
 
 
 
-        {/* TAB: My Profile / Writer Panel */}
+        {/* TAB: My Profile / Writer Panel & Bookshelf */}
         {activeTab === 'my-profile' && (
           <motion.div
             key="my-profile"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-4"
+            className="space-y-6"
           >
-            <WriterPanel
-              currentWriter={currentWriter}
-              articles={articles}
-              onUpdateWriter={onUpdateWriter}
-              onAddArticle={onAddArticle}
-              onDeleteArticle={onDeleteArticle}
-              onUpdateArticle={onUpdateArticle}
-            />
+            {/* Custom nested subtabs inside Profile */}
+            <div className="bg-slate-100 border border-slate-200/80 p-1 rounded-xl flex gap-2">
+              <button
+                type="button"
+                onClick={() => setProfileActiveTab('shelf')}
+                className={`flex-1 py-2 text-xs md:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  profileActiveTab === 'shelf'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-850 hover:bg-slate-200/50'
+                }`}
+              >
+                <Bookmark className="w-4 h-4 text-emerald-500 fill-current" />
+                আমার বুকশেলফ ({savedArticles.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfileActiveTab('writer')}
+                className={`flex-1 py-2 text-xs md:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  profileActiveTab === 'writer'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-855 hover:bg-slate-200/50'
+                }`}
+              >
+                <FileText className="w-4 h-4 text-amber-500" />
+                আমার লেখক প্যানেল ও প্রোফাইল
+              </button>
+            </div>
+
+            {profileActiveTab === 'shelf' ? (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-teal-50 to-emerald-50 p-5 rounded-2xl border border-teal-100/60 shadow-3xs">
+                  <h2 className="font-extrabold text-teal-900 text-base md:text-lg flex items-center gap-2">
+                    <Bookmark className="w-5 h-5 text-teal-600 fill-current" />
+                    আপনার ব্যক্তিগত বুকশেলফ
+                  </h2>
+                  <p className="text-xs text-teal-700 mt-1 leading-relaxed">
+                    পড়ার সুবিধার্থে হোমপেজে স্টারে ক্লিক করে পরে পড়ার এবং কাস্টম ফোল্ডারের রচনার তালিকা এখানে পাবেন।
+                  </p>
+                </div>
+
+                {/* Read Later Section */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-gray-700 text-xs bg-gray-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-gray-200/60">
+                      📁 Read Later (পরে পড়ার তালিকায়) 
+                      <span className="font-mono text-xs bg-white px-1.5 py-0.5 rounded-md text-indigo-700 border border-gray-200">({savedArticles.length})</span>
+                    </h3>
+                  </div>
+
+                  {savedArticles.length === 0 ? (
+                    <div className="bg-gray-50 border border-dashed border-gray-200 p-8 text-center text-xs text-gray-400 rounded-xl">
+                      পরে পড়ার জন্য কোনো কন্টেন্ট বুকমার্ক করা হয়নি। হোমপেজে লেখার পাশে স্টারে ক্লিক করুন।
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {articles.filter(a => savedArticles.includes(a.id)).map(art => (
+                        <div key={art.id} className="bg-white p-4 rounded-xl border border-gray-150 flex justify-between items-center gap-3 hover:shadow-3xs transition-all">
+                          <div>
+                            <h4 className="font-bold text-gray-800 text-xs leading-snug line-clamp-1">{art.title}</h4>
+                            <p className="text-[10px] text-gray-500 mt-0.5">লেখক: {art.writerName}  •  {art.category}</p>
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            <button
+                              onClick={() => setViewingArticle(art)}
+                              className="p-1 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-750 text-[10px] font-bold rounded-md transition-all border border-indigo-100"
+                            >
+                              পড়ুন
+                            </button>
+                            <button
+                              onClick={() => handleToggleReadLater(art.id)}
+                              className="p-1.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-md transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Render Custom Folders */}
+                <div className="mt-8 space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-gray-800 text-xs">📁 কাস্টম সংকলন ফোল্ডারসমূহ</h3>
+                  </div>
+
+                  {Object.keys(customFolders).length === 0 ? (
+                    <div className="bg-gray-50/50 p-10 text-center text-xs text-gray-400 border border-dashed border-gray-200 rounded-xl">
+                      এখনো কোনো কাস্টম ফোল্ডার তৈরি করা হয়নি। লেখা বুকমার্ক করার সময় ফোল্ডার বানাতে পারবেন।
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {Object.entries(customFolders).map(([folderName, ids]) => (
+                        <div key={folderName} className="space-y-3 bg-white p-4 rounded-xl border border-gray-200">
+                          <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                            <h4 className="font-bold text-xs text-indigo-700 flex items-center gap-1.5">
+                              📂 {folderName} 
+                              <span className="font-mono text-[10px] bg-indigo-50 text-indigo-805 px-1.5 py-0.5 rounded-full border border-indigo-100/40">
+                                {ids.length} টি রচনা
+                              </span>
+                            </h4>
+                          </div>
+
+                          {ids.length === 0 ? (
+                            <p className="text-[11px] text-gray-400 py-2">ফোল্ডারটি ফাঁকা রয়েছে।</p>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {articles.filter(a => ids.includes(a.id)).map(art => (
+                                <div key={art.id} className="bg-gray-50/50 p-3 rounded-lg flex justify-between items-center gap-2">
+                                  <div>
+                                    <h5 className="font-semibold text-gray-800 text-xs line-clamp-1">{art.title}</h5>
+                                    <p className="text-[10px] text-gray-400">{art.writerName} • {art.category}</p>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => setViewingArticle(art)}
+                                      className="text-[10px] p-1 px-1.5 bg-white text-indigo-650 font-bold border border-slate-205 rounded-sm hover:bg-gray-100"
+                                    >
+                                      পড়ুন
+                                    </button>
+                                    <button
+                                      onClick={() => onToggleSaveArticle(art.id, folderName)}
+                                      className="text-gray-400 hover:text-rose-505 p-1"
+                                    >
+                                      <Trash2 className="w-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <WriterPanel
+                currentWriter={currentWriter}
+                articles={articles}
+                onUpdateWriter={onUpdateWriter}
+                onAddArticle={onAddArticle}
+                onDeleteArticle={onDeleteArticle}
+                onUpdateArticle={onUpdateArticle}
+              />
+            )}
           </motion.div>
         )}
 
@@ -1810,44 +1831,77 @@ export default function ReaderPanel({
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {writers.map((writer) => {
-                    const writerPosts = articles.filter(a => a.writerId === writer.id && a.status === 'published');
-                    return (
-                      <div key={writer.id} className="bg-white border border-gray-200/95 rounded-2xl p-5 shadow-4xs hover:shadow-xs transition-all flex flex-col items-center text-center space-y-4">
-                        <img
-                          src={writer.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"}
-                          alt={writer.name}
-                          className="w-16 h-16 rounded-full object-cover border-2 border-indigo-100 shadow-sm animate-fade-in"
-                        />
-                        <div className="space-y-0.5">
-                          <h4 className="font-black text-gray-900 text-sm">{writer.name}</h4>
-                          <p className="text-[10px] text-gray-400 font-mono">@{writer.username}</p>
-                        </div>
-                        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed px-1">
-                          {writer.bio || 'সৃজনশীল লেখার মাধ্যমে সমাজ বদলে নিরন্তর বিশ্বাসী কলাম লেখক।'}
-                        </p>
-                        
-                        <div className="grid grid-cols-2 gap-4 w-full border-t border-gray-100 pt-3 text-[11px] font-semibold text-slate-500">
-                          <div className="border-r border-gray-100">
-                            <strong>{writerPosts.length}</strong>
-                            <span className="block text-[9px] text-gray-400 font-normal">প্রকাশনা</span>
-                          </div>
-                          <div>
-                            <strong>{writer.followers || 0}</strong>
-                            <span className="block text-[9px] text-gray-400 font-normal">অনুগামী</span>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => setSelectedAuthorForProfile(writer)}
-                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-4xs transition-all"
-                        >
-                          প্রোফাইল ও রচনা দেখুন
-                        </button>
-                      </div>
-                    );
-                  })}
+                <div className="bg-white border border-slate-205 rounded-2xl overflow-hidden shadow-2xs">
+                  <div className="overflow-x-auto">
+                    <table id="authors-table" className="min-w-full divide-y divide-slate-100 text-left">
+                      <thead className="bg-slate-50/75">
+                        <tr className="divide-x divide-slate-100">
+                          <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">🏆 রেটিং (Rating)</th>
+                          <th scope="col" className="px-6 py-3.5 text-xs font-bold text-gray-750 uppercase tracking-wider">✍️ লেখকের নাম ও প্রোফাইল</th>
+                          <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">📝 প্রকাশনা</th>
+                          <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">👥 ফলোয়ার</th>
+                          <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">✨ অ্যাকশন</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {(shuffledWriters.length > 0 ? shuffledWriters : writers).map((writer, index) => {
+                          const writerPosts = articles.filter(a => a.writerId === writer.id && a.status === 'published');
+                          const rating = index < 10 ? (4.95 - (index * 0.05)).toFixed(1) : null;
+                          
+                          return (
+                            <tr key={writer.id} className="hover:bg-slate-50/40 transition-colors">
+                              {/* রেটিং (Rating) */}
+                              <td className="whitespace-nowrap px-4 py-4 text-center">
+                                {rating ? (
+                                  <div className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full text-amber-705 text-xs font-extrabold font-mono">
+                                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                                    <span>{rating}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-300 font-bold font-sans">—</span>
+                                )}
+                              </td>
+                              {/* লেখক (Name) */}
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={writer.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"}
+                                    alt={writer.name}
+                                    className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-xs"
+                                  />
+                                  <div className="text-left">
+                                    <div className="font-extrabold text-gray-900 text-xs md:text-sm">{writer.name}</div>
+                                    <div className="text-[10px] text-gray-450 font-mono">@{writer.username}</div>
+                                    {writer.bio && (
+                                      <div className="text-[11px] text-gray-500 line-clamp-1 mt-0.5 max-w-xs">{writer.bio}</div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              {/* প্রকাশনা (Publications) */}
+                              <td className="whitespace-nowrap px-4 py-4 text-center font-mono text-xs md:text-sm font-bold text-gray-700">
+                                {writerPosts.length} টি
+                              </td>
+                              {/* ফলোয়ার (Followers) */}
+                              <td className="whitespace-nowrap px-4 py-4 text-center font-mono text-xs md:text-sm font-bold text-indigo-650">
+                                {writer.followers || 0} জন
+                              </td>
+                              {/* বিস্তারিত (Action) */}
+                              <td className="whitespace-nowrap px-4 py-4 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedAuthorForProfile(writer)}
+                                  className="px-3.5 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-4xs hover:shadow-3xs transition-all"
+                                >
+                                  প্রোফাইল দেখুন
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
