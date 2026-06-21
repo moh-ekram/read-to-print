@@ -9,12 +9,51 @@ import { INITIAL_WRITERS, INITIAL_ARTICLES } from './data';
 import WriterPanel from './components/WriterPanel';
 import ReaderPanel from './components/ReaderPanel';
 import AdminPanel from './components/AdminPanel';
-import { BookOpen, User, Shield, Printer, Info, HelpCircle, FileText, ChevronRight } from 'lucide-react';
+import { BookOpen, User, Shield, Printer, Info, HelpCircle, FileText, ChevronRight, Lock, Unlock, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   // Roles switcher state: 'reader' | 'writer' | 'admin'
   const [userRole, setUserRole] = useState<'reader' | 'writer' | 'admin'>('reader');
+
+  // Admin authentication and modal states
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('r2p_admin_authenticated') === 'true';
+  });
+  const [showAdminLoginModal, setShowAdminLoginModal] = useState<boolean>(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState<string>('');
+  const [adminLoginError, setAdminLoginError] = useState<string>('');
+
+  const handleAdminTabClick = () => {
+    if (isAdminAuthenticated) {
+      setUserRole('admin');
+    } else {
+      setAdminPasswordInput('');
+      setAdminLoginError('');
+      setShowAdminLoginModal(true);
+    }
+  };
+
+  const handleAdminLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const correctPassword = (import.meta as any).env?.VITE_ADMIN_PASSWORD || 'admin2026';
+    if (adminPasswordInput === correctPassword) {
+      setIsAdminAuthenticated(true);
+      sessionStorage.setItem('r2p_admin_authenticated', 'true');
+      setShowAdminLoginModal(false);
+      setUserRole('admin');
+      setAdminPasswordInput('');
+      setAdminLoginError('');
+    } else {
+      setAdminLoginError('ভুল পাসকোড! দয়া করে সঠিক অ্যাডমিন পাসকোডটি প্রদান করুন।');
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminAuthenticated(false);
+    sessionStorage.removeItem('r2p_admin_authenticated');
+    setUserRole('reader');
+  };
 
   // Load state from localStorage or fallback
   const [writers, setWriters] = useState<Writer[]>(() => {
@@ -389,16 +428,30 @@ export default function App() {
               লেখক প্যানেল
             </button>
             <button
-              onClick={() => setUserRole('admin')}
+              onClick={handleAdminTabClick}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                 userRole === 'admin'
-                  ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-black/5'
+                  ? 'bg-white text-indigo-750 shadow-sm ring-1 ring-black/5'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <Shield className="w-3.5 h-3.5 text-indigo-600" />
+              {isAdminAuthenticated ? (
+                <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+              ) : (
+                <Shield className="w-3.5 h-3.5 text-indigo-600" />
+              )}
               অ্যাডমিন প্যানেল
             </button>
+            
+            {isAdminAuthenticated && (
+              <button
+                onClick={handleAdminLogout}
+                className="p-1 px-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-200/50 transition-colors flex items-center gap-1"
+                title="লগআউট"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
         </div>
@@ -493,6 +546,81 @@ export default function App() {
           </p>
         </div>
       </footer>
+
+      {/* Admin Passcode Authentication Modal Overlay */}
+      <AnimatePresence>
+        {showAdminLoginModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="bg-white rounded-2xl shadow-xl border border-slate-200/80 max-w-sm w-full overflow-hidden"
+            >
+              {/* Header block */}
+              <div className="bg-gradient-to-br from-indigo-900 to-slate-950 p-6 text-white text-center relative">
+                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-white/20">
+                  <Lock className="w-6 h-6 text-indigo-300" />
+                </div>
+                <h3 className="text-lg font-bold">অ্যাডমিন প্যানেল প্রবেশাধিকার</h3>
+                <p className="text-xs text-indigo-200/85 mt-1">
+                  এই প্যানেলটি প্ল্যাটফর্মের কর্মকর্তা ও কাস্টমার কো-অর্ডিনেটরদের জন্য সুরক্ষিত।
+                </p>
+              </div>
+
+              {/* Input details inside a form */}
+              <form onSubmit={handleAdminLoginSubmit} className="p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="admin-passcode" className="text-xs font-bold text-slate-700 block">
+                    সিকিউরিটি পাসকোড
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                    <input
+                      id="admin-passcode"
+                      type="password"
+                      autoFocus
+                      placeholder="অ্যাডমিন পাসকোড লিখুন"
+                      value={adminPasswordInput}
+                      onChange={(e) => setAdminPasswordInput(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-sans tracking-wide text-slate-800 transition-all placeholder:text-slate-400"
+                    />
+                  </div>
+                </div>
+
+                {adminLoginError && (
+                  <p className="text-[11px] text-red-650 bg-red-50 p-2.5 rounded-lg font-medium leading-relaxed">
+                    ⚠️ {adminLoginError}
+                  </p>
+                )}
+
+                <div className="text-[10px] text-slate-400 bg-slate-50 p-2.5 rounded-lg space-y-1">
+                  <p className="font-semibold text-slate-500">সহায়তা নোট:</p>
+                  <p>• লোকাল পাসকোড: <code className="font-mono bg-slate-200 px-1 py-0.2 rounded text-slate-700">admin2026</code></p>
+                  <p>• পরিবেশ ভ্যারিয়েবল দ্বারা Vercel এ <code className="font-mono bg-slate-200 px-1 py-0.2 rounded text-slate-700">VITE_ADMIN_PASSWORD</code> দিয়ে কাস্টম পাসকোড সেট করতে পারেন।</p>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminLoginModal(false)}
+                    className="flex-1 px-4 py-2 text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200/60 rounded-xl text-xs font-bold transition-all"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                  >
+                    যাচাই করুন
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
