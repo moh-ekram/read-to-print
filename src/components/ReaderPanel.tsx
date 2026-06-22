@@ -152,7 +152,17 @@ export default function ReaderPanel({
             bio: authBio.trim()
           })
         });
-        const data = await res.json();
+
+        let data: any = {};
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          data = await res.json();
+        } else {
+          const rawText = await res.text();
+          console.error('Registration non-JSON response:', rawText);
+          throw new Error(`সার্ভার থেকে অপ্রত্যাশিত রেসপন্স (স্ট্যাটাস: ${res.status})। আপনার ভার্সেল ব্যাকএন্ড অথবা ডাটাবেস চেক করুন।`);
+        }
+
         if (res.ok) {
           setAuthSuccess('রেজিস্ট্রেশন সফল হয়েছে! অনুগ্রহ করে লগইন করুন।');
           setAuthMode('login');
@@ -169,7 +179,17 @@ export default function ReaderPanel({
             password: authPassword
           })
         });
-        const data = await res.json();
+
+        let data: any = {};
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          data = await res.json();
+        } else {
+          const rawText = await res.text();
+          console.error('Login non-JSON response:', rawText);
+          throw new Error(`সার্ভার থেকে অপ্রত্যাশিত রেসপন্স (স্ট্যাটাস: ${res.status})। আপনার ভার্সেল ব্যাকএন্ড অথবা ডাটাবেস চেক করুন।`);
+        }
+
         if (res.ok) {
           setAuthSuccess('সফলভাবে লগইন হয়েছে!');
           if (setLoggedInReader) {
@@ -179,8 +199,9 @@ export default function ReaderPanel({
           setAuthError(data.error || 'লগইন ব্যর্থ হয়েছে।');
         }
       }
-    } catch (err) {
-      setAuthError('সার্ভার কানেকশন সমস্যা। অনুগ্রহ করে আবার চেষ্টা করুন।');
+    } catch (err: any) {
+      console.error('Auth submit error details:', err);
+      setAuthError(err.message || 'সার্ভার কানেকশন সমস্যা। অনুগ্রহ করে আবার চেষ্টা করুন।');
     } finally {
       setAuthLoading(false);
     }
