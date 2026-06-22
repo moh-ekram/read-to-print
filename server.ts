@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import path from "path";
 import fs from "fs";
@@ -22,21 +25,26 @@ let fallbackUsers: any[] = [
   }
 ];
 
+// Robust live Postgres database existence check
+const hasPostgres = !!process.env.POSTGRES_URL && 
+                     process.env.POSTGRES_URL.trim() !== "" && 
+                     !process.env.POSTGRES_URL.includes("placeholder") && 
+                     process.env.POSTGRES_URL.startsWith("postgres");
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Let's check if Vercel POSTGRES_URL environment variable exists
-  const hasPostgres = !!process.env.POSTGRES_URL;
-  console.log(`[Database Initialization] hasPostgres = ${hasPostgres}`);
+  console.log(`[Database Initialization] hasPostgres configured: ${hasPostgres}`);
 
-  // Auto-initialize Postgres schema tables if hasPostgres is true
+  // Dynamic automatic schema migration on startup (if postgres is enabled)
   if (hasPostgres) {
+    let client;
     try {
-      const client = await db.connect();
-      console.log("[Database Connection] Connected to Vercel Postgres pool seamlessly.");
+      client = await db.connect();
+      console.log("[Database Connection] Seamlessly connected to Vercel Postgres pool. Running initialization schema...");
 
-      // Create users table
+      // 1. Create users table with full schema
       await client.query(`
         CREATE TABLE IF NOT EXISTS users (
           id SERIAL PRIMARY KEY,
@@ -53,7 +61,7 @@ async function startServer() {
         )
       `);
 
-      // Create articles table
+      // 2. Create articles table
       await client.query(`
         CREATE TABLE IF NOT EXISTS articles (
           id SERIAL PRIMARY KEY,
@@ -73,11 +81,41 @@ async function startServer() {
         )
       `);
 
-      // Seed initial articles if the table is completely empty
+      // 3. Ensure any evolved columns are safely upgraded (Alters tables to eliminate 'column does not exist' runtime bugs)
+      const alterQueries = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS coins INT DEFAULT 200",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS spent_amount DECIMAL(10, 2) DEFAULT 0.00",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'reader'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+
+        "ALTER TABLE articles ADD COLUMN IF NOT EXISTS sub_category VARCHAR(100)",
+        "ALTER TABLE articles ADD COLUMN IF NOT EXISTS tags TEXT",
+        "ALTER TABLE articles ADD COLUMN IF NOT EXISTS writer_id VARCHAR(100) DEFAULT 'w-admin'",
+        "ALTER TABLE articles ADD COLUMN IF NOT EXISTS author VARCHAR(255)",
+        "ALTER TABLE articles ADD COLUMN IF NOT EXISTS writer_avatar TEXT",
+        "ALTER TABLE articles ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'published'",
+        "ALTER TABLE articles ADD COLUMN IF NOT EXISTS coins INT DEFAULT 0",
+        "ALTER TABLE articles ADD COLUMN IF NOT EXISTS reads INT DEFAULT 0",
+        "ALTER TABLE articles ADD COLUMN IF NOT EXISTS word_count INT DEFAULT 0",
+        "ALTER TABLE articles ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+      ];
+
+      for (const q of alterQueries) {
+        try {
+          await client.query(q);
+        } catch (alterErr: any) {
+          console.warn(`[Migration Warning] Optional column upgrade was skipped: "${q}". Error:`, alterErr.message || alterErr);
+        }
+      }
+
+      // 4. Seed initial articles if articles table is currently empty
       const articleCountResult = await client.query("SELECT COUNT(*) FROM articles");
       const count = parseInt(articleCountResult.rows[0].count, 10);
       if (count === 0) {
-        console.log("[Database Seeding] Seeding initial articles to Vercel Postgres...");
+        console.log("[Database Seeding] Seeding default articles into Vercel Postgres...");
         for (const art of INITIAL_ARTICLES) {
           const tagsString = Array.isArray(art.tags) ? art.tags.join(',') : '';
           await client.query(`
@@ -100,27 +138,30 @@ async function startServer() {
             art.createdAt ? new Date(art.createdAt) : new Date()
           ]);
         }
-        console.log("[Database Seeding] Seeding complete!");
+        console.log("[Database Seeding] Data seeding executed successfully.");
       }
-
-      client.release();
-    } catch (err) {
-      console.error("[Database Connection] Error initializing Vercel Postgres schema:", err);
+    } catch (err: any) {
+      console.error("[Database Connection] Database schema/migration initialization error:", err.stack || err);
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   }
 
-  // Middleware
+  // Common Middleware
   app.use(express.json());
 
   // -------------------------------------------------------------
-  // API ENDPOINTS
+  // API ENDPOINTS (PRO-GRADE AND SAFE FROM CONNECTION LEAKS)
   // -------------------------------------------------------------
 
   // 1. GET /api/articles/get
   app.get("/api/articles/get", async (req, res) => {
     if (hasPostgres) {
+      let client;
       try {
-        const client = await db.connect();
+        client = await db.connect();
         const result = await client.query(`
           SELECT 
             id, 
@@ -140,7 +181,6 @@ async function startServer() {
           FROM articles 
           ORDER BY created_at DESC
         `);
-        client.release();
 
         const mapped = result.rows.map((art: any) => ({
           id: art.id.toString(),
@@ -163,12 +203,18 @@ async function startServer() {
 
         return res.json(mapped);
       } catch (err: any) {
-        console.error("[API] Vercel Postgres reading failed, falling back to local memory:", err);
+        console.error("[Database Error] GET /api/articles/get failed:", err.stack || err);
+        return res.status(500).json({ 
+          error: "Database read failure. Please contact system admin or verify postgres configurations.", 
+          details: err.message || String(err)
+        });
+      } finally {
+        if (client) client.release();
       }
+    } else {
+      // In-Memory Fallback Response for offline sandbox
+      return res.json(fallbackArticles);
     }
-
-    // Local Fallback response
-    return res.json(fallbackArticles);
   });
 
   // 2. POST /api/articles/create
@@ -193,8 +239,9 @@ async function startServer() {
       }
 
       if (hasPostgres) {
+        let client;
         try {
-          const client = await db.connect();
+          client = await db.connect();
           const resolvedTags = Array.isArray(tags) ? tags.join(',') : (typeof tags === 'string' ? tags : '');
           const resolvedWordCount = wordCount || content.split(/\s+/).filter(Boolean).length;
 
@@ -216,7 +263,6 @@ async function startServer() {
             Number(coins) || 0,
             resolvedWordCount
           ]);
-          client.release();
 
           const row = result.rows[0];
           const newArticle = {
@@ -239,35 +285,40 @@ async function startServer() {
           };
           return res.status(201).json(newArticle);
         } catch (err: any) {
-          console.error("[API] Vercel Postgres insert failed, falling back to local memory:", err);
+          console.error("[Database Error] POST /api/articles/create failed:", err.stack || err);
+          return res.status(500).json({ 
+            error: "Database write failure. Article could not be created.", 
+            details: err.message || String(err)
+          });
+        } finally {
+          if (client) client.release();
         }
+      } else {
+        // In-Memory Fallback Response for offline sandbox
+        const newId = 'art-' + Date.now();
+        const resolvedTagsArray = Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map((t: string) => t.trim()) : []);
+        const newArt: any = {
+          id: newId,
+          title,
+          content,
+          category,
+          subCategory,
+          tags: resolvedTagsArray,
+          writerId,
+          writerName: author,
+          writerAvatar,
+          status,
+          createdAt: new Date().toISOString().split('T')[0],
+          reads: 0,
+          wordCount: wordCount || content.split(/\s+/).filter(Boolean).length,
+          requiredCoins: Number(coins) || 0
+        };
+
+        fallbackArticles = [newArt, ...fallbackArticles];
+        return res.status(201).json(newArt);
       }
-
-      // Local Fallback insertion
-      const newId = 'art-' + Date.now();
-      const resolvedTagsArray = Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map((t: string) => t.trim()) : []);
-      const newArt: any = {
-        id: newId,
-        title,
-        content,
-        category,
-        subCategory,
-        tags: resolvedTagsArray,
-        writerId,
-        writerName: author,
-        writerAvatar,
-        status,
-        createdAt: new Date().toISOString().split('T')[0],
-        reads: 0,
-        wordCount: wordCount || content.split(/\s+/).filter(Boolean).length,
-        requiredCoins: Number(coins) || 0
-      };
-
-      fallbackArticles = [newArt, ...fallbackArticles];
-      return res.status(201).json(newArt);
-
     } catch (e: any) {
-      console.error("[API] Error in creating article:", e);
+      console.error("[API Error] Inside /api/articles/create handler:", e.stack || e);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -283,8 +334,9 @@ async function startServer() {
       const lowerUsername = username.trim().toLowerCase();
 
       if (hasPostgres) {
+        let client;
         try {
-          const client = await db.connect();
+          client = await db.connect();
 
           const userCheck = await client.query(
             "SELECT id FROM users WHERE username = $1",
@@ -292,7 +344,6 @@ async function startServer() {
           );
 
           if (userCheck.rows.length > 0) {
-            client.release();
             return res.status(409).json({ error: "Username already exists. Please choose another username." });
           }
 
@@ -314,7 +365,6 @@ async function startServer() {
             userBio
           ]);
 
-          client.release();
           const newUser = result.rows[0];
 
           const token = signJwt({
@@ -339,59 +389,64 @@ async function startServer() {
             token
           });
         } catch (dbErr: any) {
-          console.error("[API] Vercel Postgres register failed, falling back to local memory:", dbErr);
+          console.error("[Database Error] POST /api/auth/register failed:", dbErr.stack || dbErr);
+          return res.status(500).json({ 
+            error: "Registration failed on Vercel Postgres database connection.", 
+            details: dbErr.message || String(dbErr)
+          });
+        } finally {
+          if (client) client.release();
         }
-      }
+      } else {
+        // In-Memory Fallback Response for offline sandbox
+        const existingUser = fallbackUsers.find((u: any) => u.username === lowerUsername);
+        if (existingUser) {
+          return res.status(409).json({ error: "Username already exists. Please choose another username." });
+        }
 
-      // Local Fallback registration
-      const existingUser = fallbackUsers.find((u: any) => u.username === lowerUsername);
-      if (existingUser) {
-        return res.status(409).json({ error: "Username already exists. Please choose another username." });
-      }
+        const { hash, salt } = hashPassword(password);
+        const userAvatar = avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(username)}`;
+        const userBio = bio || "মুদ্রণ ও সাহিত্যপ্রেমী কলাম পাঠক।";
 
-      const { hash, salt } = hashPassword(password);
-      const userAvatar = avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(username)}`;
-      const userBio = bio || "মুদ্রণ ও সাহিত্যপ্রেমী কলাম পাঠক।";
+        const newUser: any = {
+          id: "usr-" + Date.now(),
+          name: name.trim(),
+          username: lowerUsername,
+          password_hash: hash,
+          salt: salt,
+          avatar: userAvatar,
+          coins: 200,
+          spent_amount: 0.00,
+          bio: userBio,
+          role: "reader"
+        };
 
-      const newUser: any = {
-        id: "usr-" + Date.now(),
-        name: name.trim(),
-        username: lowerUsername,
-        password_hash: hash,
-        salt: salt,
-        avatar: userAvatar,
-        coins: 200,
-        spent_amount: 0.00,
-        bio: userBio,
-        role: "reader"
-      };
+        fallbackUsers = [...fallbackUsers, newUser];
 
-      fallbackUsers = [...fallbackUsers, newUser];
-
-      const token = signJwt({
-        userId: newUser.id,
-        username: newUser.username,
-        role: newUser.role
-      });
-
-      return res.status(201).json({
-        success: true,
-        message: "Registration successful!",
-        user: {
-          id: newUser.id,
-          name: newUser.name,
+        const token = signJwt({
+          userId: newUser.id,
           username: newUser.username,
-          avatar: newUser.avatar,
-          currentCoins: newUser.coins,
-          spentAmount: 0,
-          bio: newUser.bio,
           role: newUser.role
-        },
-        token
-      });
+        });
 
+        return res.status(201).json({
+          success: true,
+          message: "Registration successful!",
+          user: {
+            id: newUser.id,
+            name: newUser.name,
+            username: newUser.username,
+            avatar: newUser.avatar,
+            currentCoins: newUser.coins,
+            spentAmount: 0,
+            bio: newUser.bio,
+            role: newUser.role
+          },
+          token
+        });
+      }
     } catch (e: any) {
-      console.error("[API] Error registering user:", e);
+      console.error("[API Error] Inside /api/auth/register handler:", e.stack || e);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -407,15 +462,14 @@ async function startServer() {
       const lowerUsername = username.trim().toLowerCase();
 
       if (hasPostgres) {
+        let client;
         try {
-          const client = await db.connect();
+          client = await db.connect();
           const result = await client.query(`
             SELECT id, name, username, password_hash, salt, avatar, coins, spent_amount, bio, role 
             FROM users 
             WHERE username = $1
           `, [lowerUsername]);
-
-          client.release();
 
           if (result.rows.length === 0) {
             return res.status(401).json({ error: "Invalid username or password. User not found." });
@@ -449,49 +503,53 @@ async function startServer() {
             token
           });
         } catch (dbErr: any) {
-          console.error("[API] Vercel Postgres login failed, falling back to local memory:", dbErr);
+          console.error("[Database Error] POST /api/auth/login failed:", dbErr.stack || dbErr);
+          return res.status(500).json({ 
+            error: "Authentication failed on Vercel Postgres database connection.", 
+            details: dbErr.message || String(dbErr)
+          });
+        } finally {
+          if (client) client.release();
         }
-      }
+      } else {
+        // In-Memory Fallback Response for offline sandbox
+        const user = fallbackUsers.find((u: any) => u.username === lowerUsername);
+        if (!user) {
+          return res.status(401).json({ error: "Invalid username or password. User not found." });
+        }
 
-      // Local Fallback login
-      const user = fallbackUsers.find((u: any) => u.username === lowerUsername);
-      if (!user) {
-        return res.status(401).json({ error: "Invalid username or password. User not found." });
-      }
+        const isValid = verifyPassword(password, user.password_hash, user.salt);
+        if (!isValid) {
+          return res.status(401).json({ error: "Invalid username or password. Please try again." });
+        }
 
-      const isValid = verifyPassword(password, user.password_hash, user.salt);
-      if (!isValid) {
-        return res.status(401).json({ error: "Invalid username or password. Please try again." });
-      }
-
-      const token = signJwt({
-        userId: user.id,
-        username: user.username,
-        role: user.role
-      });
-
-      return res.json({
-        success: true,
-        message: "Login successful!",
-        user: {
-          id: user.id,
-          name: user.name,
+        const token = signJwt({
+          userId: user.id,
           username: user.username,
-          avatar: user.avatar,
-          currentCoins: user.coins,
-          spentAmount: user.spent_amount,
-          bio: user.bio,
           role: user.role
-        },
-        token
-      });
+        });
 
+        return res.json({
+          success: true,
+          message: "Login successful!",
+          user: {
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            avatar: user.avatar,
+            currentCoins: user.coins,
+            spentAmount: user.spent_amount,
+            bio: user.bio,
+            role: user.role
+          },
+          token
+        });
+      }
     } catch (e: any) {
-      console.error("[API] Error authenticating user:", e);
+      console.error("[API Error] Inside /api/auth/login handler:", e.stack || e);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
-
 
   // -------------------------------------------------------------
   // VITE DEVELOPMENT MODES & STATIC ROUTING HANDLERS
@@ -518,10 +576,11 @@ async function startServer() {
     }
   }
 
-  // Listen
+  // Bind to host and listen on port 3000
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`[Express Server] Server running successfully on port ${PORT}`);
   });
 }
 
+// Spark up Express server + Database initialization
 startServer();
