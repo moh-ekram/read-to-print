@@ -161,41 +161,39 @@ export default function WriterPanel({
   return (
     <div className="max-w-4xl mx-auto space-y-6" id="writer-panel">
       {/* Mini navbar inside panel */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-xs border border-gray-100">
+      <div className="flex justify-between items-center bg-[#faf9f6] p-3 border border-neutral-300">
         <div className="flex items-center gap-3">
           <img 
             src={currentWriter.avatar} 
             alt={currentWriter.name} 
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-100" 
+            className="w-8 h-8 rounded-full object-cover border border-neutral-400" 
           />
           <div>
-            <h2 className="font-semibold text-gray-800 text-sm">{currentWriter.name}</h2>
-            <p className="text-xs text-gray-500">লেখক প্রোফাইল • @{currentWriter.username}</p>
+            <h2 className="font-bold text-neutral-900 text-sm leading-none">{currentWriter.name}</h2>
+            <p className="text-[10px] text-neutral-400 font-mono tracking-tighter mt-1">লেখক পিন • /@{currentWriter.username}</p>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-4 text-xs font-mono">
           <button
             onClick={() => setActiveTab('profile')}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+            className={`py-1 px-1.5 transition-all ${
               activeTab === 'profile' 
-                ? 'bg-indigo-50 text-indigo-750' 
-                : 'text-slate-600 hover:bg-slate-50'
+                ? 'text-neutral-950 border-b-2 border-neutral-950 font-bold' 
+                : 'text-neutral-500 hover:text-neutral-900'
             }`}
           >
-            <BookOpen className="w-4 h-4" />
-            টাইমলাইন ও বায়ো
+            টিমলাইন ও বায়ো
           </button>
           <button
             onClick={handleStartNewArticle}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+            className={`py-1 px-1.5 transition-all ${
               activeTab === 'editor' && !editingArticleId
-                ? 'bg-indigo-600 text-white shadow-xs' 
-                : 'bg-indigo-50 text-indigo-750 hover:bg-indigo-100/70'
+                ? 'text-neutral-950 border-b-2 border-neutral-950 font-bold' 
+                : 'text-neutral-500 hover:text-neutral-900'
             }`}
           >
-            <Plus className="w-4 h-4" />
-            নতুন লেখা লিখুন
+            + নতুন লেখা লিখুন
           </button>
         </div>
       </div>

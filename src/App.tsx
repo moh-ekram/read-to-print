@@ -415,56 +415,50 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen bg-[#faf9f6] text-neutral-900 flex flex-col font-sans selection:bg-neutral-200 selection:text-neutral-900">
       
-      {/* Top Professional Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200/80 backdrop-blur-md shadow-xs" id="app-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex justify-between items-center">
+      {/* Editorial Broadsheet Masthead */}
+      <header className="sticky top-0 z-40 bg-[#faf9f6]/95 backdrop-blur-sm shadow-xs" id="app-header">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 flex justify-between items-center">
           
-          {/* Logo & Slogan */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
-              <Printer className="w-5 h-5 stroke-2" />
+          {/* Logo & Sub-header */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-neutral-100 flex items-center justify-center text-neutral-950 font-digits text-xs font-black">
+              R
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-800">read2print</h1>
-              <span className="text-[10px] text-slate-400 font-medium tracking-wide block">প্রকাশ করুন • সাজান • নিজের বই প্রিন্ট করুন</span>
+              <h1 className="text-lg font-black tracking-tighter text-neutral-950 font-serif">read2print</h1>
+              <span className="text-[9px] text-neutral-450 font-medium block leading-none uppercase tracking-widest mt-0.5">মুদ্রণ ও সাহিত্য সংকলন</span>
             </div>
           </div>
 
-          {/* User Role Switcher Controls */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+          {/* Minimalist Switcher - No pipe symbols, clean space */}
+          <div className="flex items-center gap-4 text-xs text-neutral-500">
             <button
               onClick={() => setUserRole('reader')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`py-1 px-1.5 transition-all ${
                 userRole === 'reader'
-                  ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-black/5'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'text-neutral-950 font-bold bg-[#f1efe9] rounded-sm'
+                  : 'hover:text-neutral-950'
               }`}
             >
-              <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
-              হোম পেজ
+              পাঠক প্রকাশনা
             </button>
             <button
               onClick={handleAdminTabClick}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`py-1 px-1.5 transition-all flex items-center gap-1 ${
                 userRole === 'admin'
-                  ? 'bg-white text-indigo-750 shadow-sm ring-1 ring-black/5'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'text-neutral-950 font-bold bg-[#f1efe9] rounded-sm'
+                  : 'hover:text-neutral-950'
               }`}
             >
-              {isAdminAuthenticated ? (
-                <Unlock className="w-3.5 h-3.5 text-emerald-600" />
-              ) : (
-                <Shield className="w-3.5 h-3.5 text-indigo-600" />
-              )}
-              অ্যাডমিন প্যানেল
+              নিয়ন্ত্রণ মোড
             </button>
             
             {isAdminAuthenticated && (
               <button
                 onClick={handleAdminLogout}
-                className="p-1 px-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-200/50 transition-colors flex items-center gap-1"
+                className="p-1 text-neutral-400 hover:text-red-650 transition-colors"
                 title="লগআউট"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -475,22 +469,17 @@ export default function App() {
         </div>
       </header>
 
-      {/* Hero Guidelines Informer Card */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse shrink-0" />
-            <p>
-              <b>লাইভ সিমুলেশন মোড:</b> আপনি যেকোনো প্যানেল নির্বাচন করে সম্পূর্ণ লাইভ ইন্টারেকশন টেস্ট করতে পারবেন।
-            </p>
+      {/* Razor-thin Broadside Metadata Bar with subtle background shade instead of crisp border lines */}
+      <div className="bg-[#f3f1eb] text-[10px] text-neutral-500 tracking-wide font-sans">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-1.5 flex justify-between items-center leading-none">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+            <span>সেন্ট্রাল ডাটাগ্রিড লাইভ</span>
           </div>
           
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-xs">
-              চলতি ভূমিকা: {userRole === 'reader' ? 'পাঠক (Reader)' : 'ম্যানেজমেন্ট (Admin)'}
-            </span>
-            <span className="text-slate-300">|</span>
-            <span className="text-[11px] text-slate-400">বিকাশ/নগদ/কার্ড গেটওয়ে লাইভ টেস্টেড</span>
+          <div className="flex gap-4 items-center">
+            <span>ভূমিকা {userRole === 'reader' ? 'সংকলন পাঠক' : 'মডারেটর'}</span>
+            <span>মুদ্রণ রেডি পিডিএফ ডিস্ট্রিবিউশন</span>
           </div>
         </div>
       </div>

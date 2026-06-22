@@ -389,97 +389,93 @@ export default function ReaderPanel({
 
   return (
     <div id="reader-panel" className="space-y-6">
-      {/* Search Header Banner */}
-      <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-slate-100 p-6 md:p-8 rounded-2xl shadow-md border border-indigo-950 relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl" />
-        <div className="absolute left-1/3 bottom-0 w-32 h-32 bg-indigo-600/10 rounded-full blur-xl" />
-        
-        <div className="relative z-10 max-w-xl space-y-3">
-          <span className="bg-indigo-500/20 text-indigo-300 text-xs font-bold px-3 py-1 rounded-full border border-indigo-500/20">
-            বইপ্রেমীদের নতুন ঠিকানায় স্বাগতম
-          </span>
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-snug">
-            পছন্দের ব্লগগুলো একসঙ্গে সাজিয়ে আপনার নিজস্ব বই বানান!
-          </h1>
-          <p className="text-xs md:text-sm text-slate-300 leading-relaxed text-justify">
-            আপনার পছন্দের বিভিন্ন লেখকের একাধিক কন্টেন্ট বা প্রবন্ধ একসাথে কার্টে যুক্ত করুন। Read2Print আপনার সংকলনটিকে একটি কাস্টম প্রফেশনাল বই আকারে প্রিন্ট করে আপনার ঠিকানায় সরাসরি ডেলিভারি এনে দেবে।
+      {/* Broadsheet Masthead Banner with soft background shading rather than harsh black borders */}
+      <div className="bg-[#f3f1eb] text-neutral-900 py-6 px-6 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-6" id="editorial-banner">
+        <div className="max-w-2xl space-y-2">
+          <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 font-sans">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+            <span>মুদ্রণালয় সংস্করণ <span className="font-digits">1.00</span></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+            <span>নিয়মিত সংকলন</span>
+          </div>
+          <h2 className="text-xl md:text-2xl font-black tracking-tight text-neutral-950 font-serif leading-tight">
+            মুদ্রণযোগ্য সাহিত্য ও সংকলন ব্যবস্থাপনা প্ল্যাটফর্ম
+          </h2>
+          <p className="text-xs text-neutral-550 leading-relaxed text-left">
+            যেকোনো লেখকের উন্মুক্ত প্রবন্ধ নির্বাচন পূর্বক নিজস্ব কাস্টম সংকলন প্রস্তুত করুন এবং সরাসরি মুদ্রিত গ্রন্থাকারে ঘরে বসেই সংগ্রহ করুন।
           </p>
+        </div>
+        <div className="shrink-0 flex md:flex-col justify-between items-start md:items-end gap-2 bg-[#faf9f6]/65 p-3 rounded-md">
+          <span className="text-[10px] text-neutral-450 block uppercase tracking-widest font-sans font-semibold">সার্ভিস স্ট্যাটাস</span>
+          <span className="text-xs font-black font-serif text-neutral-900 leading-none">রানিং <span className="font-digits">2026</span></span>
+          <span className="text-[9px] text-neutral-450 font-digits font-bold tracking-tighter"><span className="font-digits">15</span> ক্যাটেগরি <span className="font-digits">3</span> কাস্টমাইজেশন</span>
         </div>
       </div>
 
-      {/* Primary Inner Segment Tabs */}
-      <div className="flex flex-wrap border-b border-gray-200 gap-1 md:gap-2">
+      {/* Primary Inner Segment Tabs - separated clean spacing, no slashes or brackets, soft color-shaded active indicator */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 py-2 text-xs">
         <button
           onClick={() => { setActiveTab('discover'); setCheckoutStep('cart'); }}
-          className={`px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`py-1.5 px-3 transition-all rounded-md ${
             activeTab === 'discover' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-800'
+              ? 'bg-[#eae7df] text-neutral-950 font-black' 
+              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
           }`}
         >
-          <BookOpen className="w-4 h-4" />
           হোম পেজ
         </button>
         <button
           onClick={() => { setActiveTab('my-profile'); }}
-          className={`px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`py-1.5 px-3 transition-all rounded-md ${
             activeTab === 'my-profile' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-800'
+              ? 'bg-[#eae7df] text-neutral-950 font-black' 
+              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
           }`}
         >
-          <User className="w-4 h-4 text-emerald-500" />
           আমার প্রোফাইল
         </button>
         <button
           onClick={() => { setActiveTab('author-profiles'); setSelectedAuthorForProfile(null); }}
-          className={`px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`py-1.5 px-3 transition-all rounded-md ${
             activeTab === 'author-profiles' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-800'
+              ? 'bg-[#eae7df] text-neutral-950 font-black' 
+              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
           }`}
         >
-          <User className="w-4 h-4 text-indigo-500" />
           লেখক প্রোফাইলসমূহ
         </button>
         <button
           onClick={() => { setActiveTab('print-cart'); }}
-          className={`px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 relative ${
+          className={`py-1.5 px-3 transition-all flex items-center gap-1.5 rounded-md ${
             activeTab === 'print-cart' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-800'
+              ? 'bg-[#eae7df] text-neutral-950 font-black' 
+              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
           }`}
         >
-          <ShoppingBag className="w-4 h-4" />
-          কাস্টম প্রিন্ট বাস্কেট
-          {cart.length > 0 && (
-            <span className="bg-amber-500 text-white text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center font-mono animate-bounce">
-              {cart.length}
-            </span>
-          )}
+          প্রিন্ট বাস্কেট 
+          <span className="font-digits text-[10px] bg-neutral-100 text-neutral-850 px-1 py-0.2 rounded-xs select-none">
+            {cart.length}
+          </span>
         </button>
-
         <button
           onClick={() => { setActiveTab('coin-store'); }}
-          className={`px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`py-1.5 px-3 transition-all flex items-center gap-1.5 rounded-md ${
             activeTab === 'coin-store' 
-              ? 'border-amber-500 text-amber-600 font-black bg-amber-50/30' 
-              : 'border-transparent text-gray-500 hover:text-gray-80s'
+              ? 'bg-[#eae7df] text-neutral-950 font-black' 
+              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
           }`}
         >
-          <Coins className="w-4 h-4 text-amber-500 animate-pulse" />
-          আমার কয়েন: <span className="font-mono text-amber-600 font-bold">{readerCoins}</span>
+          ব্যালেন্স <span className="font-digits font-bold bg-[#eae7df]/80 px-1 py-0.2 rounded text-neutral-800">{readerCoins} কয়েন</span>
         </button>
         <button
           onClick={() => { setActiveTab('become-writer'); }}
-          className={`px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`py-1.5 px-3 transition-all rounded-md ${
             activeTab === 'become-writer' 
-              ? 'border-indigo-600 text-indigo-700 bg-indigo-50/10' 
-              : 'border-transparent text-gray-500 hover:text-gray-800'
+              ? 'bg-[#eae7df] text-neutral-950 font-black' 
+              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
           }`}
         >
-          <FileText className="w-4 h-4 text-indigo-500" />
-          লেখক হতে আবেদন
+          লেখক আবেদন
         </button>
       </div>
 
@@ -495,15 +491,15 @@ export default function ReaderPanel({
           >
             {/* Search and Filters Block */}
             <div className="space-y-4">
-              <div className="bg-white p-3 md:p-4 rounded-xl shadow-xs border border-gray-150 flex flex-col md:flex-row gap-3">
+              <div className="bg-[#faf9f6] p-3 rounded-lg border border-neutral-300 flex flex-col md:flex-row gap-3">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-neutral-400" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="শিরোনাম, লেখক বা সাব-ক্যাটেগরি দিয়ে খুঁজুন..."
-                    className="w-full pl-9 pr-4 py-2 text-xs border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-505 bg-gray-50/50"
+                    className="w-full pl-9 pr-4 py-2 text-xs border border-neutral-300 rounded-md focus:outline-hidden focus:border-neutral-900 bg-white"
                   />
                 </div>
                 
@@ -511,7 +507,7 @@ export default function ReaderPanel({
                   <select
                     value={selectedWriter}
                     onChange={(e) => setSelectedWriter(e.target.value)}
-                    className="w-full p-2 text-xs border border-gray-205 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-505 bg-white font-bold text-gray-700"
+                    className="w-full p-2 text-xs border border-neutral-305 rounded-md focus:outline-hidden focus:border-neutral-900 bg-white font-bold text-neutral-800"
                   >
                     <option value="সব">সকল কলাম লেখক</option>
                     {writers.map(w => (
@@ -523,25 +519,25 @@ export default function ReaderPanel({
 
               {/* 1. Thin Category Capsule Row */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                {['সব', 'সাহিত্য', 'বিজ্ঞান', 'রাজনীতি', 'অর্থনীতি', 'ধর্ম', 'दर्शन'].map((cat) => (
+                {['সব', 'সাহিত্য', 'বিজ্ঞান', 'রাজনীতি', 'অর্থনীতি', 'ধর্ম', 'দর্শন'].map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all shrink-0 border uppercase tracking-wide ${
+                    className={`px-3 py-1 text-xs transition-all shrink-0 border uppercase tracking-wide rounded-md ${
                       (selectedCategory === cat || (cat === 'সব' && selectedCategory === 'সব'))
-                        ? 'bg-indigo-600 text-white border-indigo-650 shadow-xs'
-                        : 'bg-white text-gray-650 border-gray-200 hover:bg-gray-50 hover:text-gray-950'
+                        ? 'bg-neutral-950 text-[#faf9f6]'
+                        : 'bg-transparent text-neutral-600 border-neutral-200 hover:border-neutral-400 hover:text-neutral-900'
                     }`}
                   >
-                    {cat === 'সব' ? 'সব লেখা' : cat}
+                    • {cat === 'সব' ? 'সব লেখা' : cat}
                   </button>
                 ))}
               </div>
 
               {/* Coin Filter Minimal Row */}
-              <div id="coin-filter-bar" className="flex flex-wrap items-center gap-2 pt-2 pb-1 bg-slate-50/50 px-3 rounded-xl border border-slate-200/60 mt-1">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
-                  <Coins className="w-3.5 h-3.5 text-amber-500" /> কয়েন ফিল্টার:
+              <div id="coin-filter-bar" className="flex flex-wrap items-center gap-2 pt-2 pb-1 border-t border-neutral-200 mt-1">
+                <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider flex items-center gap-1 shrink-0 font-mono">
+                  [কয়েন পরিমাপক]:
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {[
@@ -556,10 +552,10 @@ export default function ReaderPanel({
                       onClick={() => {
                         setCoinFilterType(item.value as any);
                       }}
-                      className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-md border transition-all ${
+                      className={`px-2.5 py-0.5 text-[10px] border transition-all ${
                         coinFilterType === item.value
-                          ? 'bg-amber-500 text-white border-amber-600 shadow-4xs font-bold'
-                          : 'bg-white text-slate-650 border-slate-200 hover:bg-slate-50 hover:text-slate-800'
+                          ? 'bg-neutral-900 text-white border-neutral-900'
+                          : 'bg-transparent text-neutral-600 border-neutral-200 hover:text-neutral-900'
                       }`}
                     >
                       {item.label}
@@ -567,14 +563,14 @@ export default function ReaderPanel({
                   ))}
 
                   {/* Custom Coin Input Option */}
-                  <div className={`flex items-center gap-1 bg-white border rounded-md px-2 py-0.5 ${
-                    coinFilterType === 'custom' ? 'border-amber-400 ring-1 ring-amber-400/25' : 'border-slate-200'
+                  <div className={`flex items-center gap-1 bg-white border px-2 py-0.5 text-[10px] ${
+                    coinFilterType === 'custom' ? 'border-neutral-900 ring-1 ring-neutral-400/25' : 'border-neutral-200'
                   }`}>
                     <button
                       type="button"
                       onClick={() => setCoinFilterType('custom')}
-                      className={`text-[10px] font-bold transition-all ${
-                        coinFilterType === 'custom' ? 'text-amber-600 font-black' : 'text-slate-500'
+                      className={`font-semibold transition-all ${
+                        coinFilterType === 'custom' ? 'text-neutral-900 font-black' : 'text-neutral-500'
                       }`}
                     >
                       কাস্টম (≤):
@@ -586,8 +582,8 @@ export default function ReaderPanel({
                         setCustomCoinLimit(e.target.value);
                         setCoinFilterType('custom');
                       }}
-                      placeholder="মান লিখুন"
-                      className="w-12 p-0 text-[10px] font-bold bg-transparent text-slate-800 focus:outline-hidden text-center placeholder-slate-400 border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      placeholder="মান"
+                      className="w-10 p-0 text-[10px] font-bold bg-transparent text-neutral-800 focus:outline-hidden text-center placeholder-neutral-400 border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>
@@ -667,8 +663,8 @@ export default function ReaderPanel({
 
             {/* Articles List (প্রবন্ধসমূহের তালিকা) */}
             {filteredArticles.length === 0 ? (
-              <div className="bg-white p-12 text-center rounded-xl border border-dashed border-gray-200 text-gray-500">
-                <Search className="w-12 h-12 stroke-1 mx-auto mb-2 text-gray-300" />
+              <div className="bg-[#fcfbf9] p-12 text-center rounded-xl border border-dashed border-neutral-200 text-neutral-400">
+                <Search className="w-12 h-12 stroke-1 mx-auto mb-2 text-neutral-300" />
                 <p className="text-sm">কোনো লেখা পাওয়া যায়নি। অন্য কিওয়ার্ড দিয়ে চেষ্টা করুন।</p>
               </div>
             ) : (
@@ -677,30 +673,30 @@ export default function ReaderPanel({
                   const isInCart = cart.some(item => item.articleId === art.id);
                   const isSaved = savedArticles.includes(art.id);
                   
-                  // Deterministic premium varying gray backgrounds for cards
+                  // Deterministic premium minimalist neutral/warm background shading instead of stark contrast/black strokes
                   const grayShades = [
-                    'bg-slate-50 border-slate-200/90 hover:bg-slate-100/70 hover:border-slate-350/60',
-                    'bg-zinc-100/40 border-zinc-200 hover:bg-zinc-100/80 hover:border-zinc-300',
-                    'bg-stone-50 border-stone-200 hover:bg-stone-100/70 hover:border-stone-300',
-                    'bg-gray-100/30 border-gray-200 hover:bg-gray-100/80 hover:border-gray-250',
-                    'bg-neutral-50 border-neutral-200/90 hover:bg-neutral-100/70 hover:border-neutral-350/60',
-                    'bg-slate-100/30 border-slate-200 hover:bg-slate-100/70 hover:border-slate-300'
+                    'bg-[#f7f6f0] hover:bg-[#f3f2eb] border-transparent hover:shadow-xs',
+                    'bg-[#fcfbf9]/80 hover:bg-[#f7f6f0] border-transparent hover:shadow-xs',
+                    'bg-[#f4f3ed] hover:bg-[#eae8df] border-transparent hover:shadow-xs',
+                    'bg-[#f6f5ef] hover:bg-[#f0ede4] border-transparent hover:shadow-xs',
+                    'bg-[#faf9f6] hover:bg-[#f5f4ed] border border-neutral-200/50 hover:shadow-xs',
+                    'bg-[#f5f4ee] hover:bg-[#eae8df] border-transparent hover:shadow-xs'
                   ];
                   const chosenShade = grayShades[index % grayShades.length];
                   
                   return (
                     <div 
                       key={art.id} 
-                      className={`${chosenShade} p-5 rounded-2xl flex flex-col justify-between hover:shadow-2xs transition-all duration-200 group`}
+                      className={`${chosenShade} p-6 rounded-xl flex flex-col justify-between transition-all duration-300 group`}
                     >
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-2 py-0.5 bg-indigo-50 text-indigo-850 text-[10px] font-bold rounded-full">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="px-2.5 py-0.5 bg-neutral-200 text-neutral-800 text-[10px] font-bold rounded-md">
                               {art.category}
                             </span>
                             {art.subCategory && (
-                              <span className="text-[10px] text-gray-500 font-medium">/{art.subCategory}</span>
+                              <span className="text-[10px] text-neutral-550 font-medium"> {art.subCategory}</span>
                             )}
                           </div>
                           
@@ -710,8 +706,8 @@ export default function ReaderPanel({
                               onClick={() => handleToggleReadLater(art.id)}
                               className={`p-1.5 rounded-md transition-all ${
                                 isSaved 
-                                  ? 'bg-indigo-50 text-indigo-750' 
-                                  : 'text-gray-400 hover:text-indigo-600 hover:bg-gray-200/50'
+                                  ? 'bg-[#eae8df] text-neutral-950' 
+                                  : 'text-neutral-400 hover:text-neutral-800 hover:bg-[#eae8df]/60'
                               }`}
                               title={isSaved ? 'বুকশেলফ থেকে সরান' : 'বুকশেলফে সেভ করুন'}
                             >
@@ -719,7 +715,7 @@ export default function ReaderPanel({
                             </button>
                             <button
                               onClick={() => handleOpenFolderModal(art.id)}
-                              className="text-gray-400 hover:text-indigo-600 p-1.5 rounded-md hover:bg-gray-200/50 transition-all"
+                              className="text-neutral-400 hover:text-neutral-800 p-1.5 rounded-md hover:bg-[#eae8df]/60 transition-all"
                               title="কাস্টম ফোল্ডারে রাখুন"
                             >
                               <Layers className="w-3.5 h-3.5 font-sans" />
@@ -729,11 +725,11 @@ export default function ReaderPanel({
 
                         <h3 
                           onClick={() => setViewingArticle(art)}
-                          className="font-bold text-indigo-700 text-lg group-hover:text-indigo-900 transition-colors cursor-pointer leading-snug flex items-center justify-between gap-1.5 flex-wrap"
+                          className="font-bold text-neutral-900 text-lg group-hover:text-neutral-950 transition-colors cursor-pointer leading-snug flex items-center justify-between gap-1.5 flex-wrap font-serif"
                         >
                           <span>{art.title}</span>
-                          <span className="inline-flex items-center gap-0.5 text-xs bg-amber-50 text-amber-600 font-bold border border-amber-100 px-1.5 py-0.5 rounded-full shrink-0 select-none font-mono" title="প্রয়োজনীয় কয়েন">
-                            🪙 {art.requiredCoins || 0}
+                          <span className="inline-flex items-center gap-0.5 text-xs bg-neutral-100/80 text-neutral-800 font-bold px-2 py-0.5 rounded-md shrink-0 select-none" title="প্রয়োজনীয় কয়েন">
+                            🪙 <span className="font-digits">{art.requiredCoins || 0}</span>
                           </span>
                         </h3>
 
@@ -742,20 +738,19 @@ export default function ReaderPanel({
                             e.stopPropagation();
                             handleViewAuthorProfileByWriterName(art.writerName);
                           }}
-                          className="flex items-center gap-2 cursor-pointer hover:text-indigo-650 group/author"
+                          className="flex items-center gap-2 cursor-pointer hover:text-neutral-900 group/author"
                         >
                           <img 
                             src={art.writerAvatar} 
                             alt="" 
-                            className="w-5 h-5 rounded-full object-cover group-hover/author:ring-2 group-hover/author:ring-indigo-400 transition-all animate-fade-in" 
+                            className="w-5 h-5 rounded-full object-cover transition-all" 
                           />
-                          <span className="text-xs text-gray-750 font-bold group-hover/author:underline">{art.writerName}</span>
-                          <span className="text-gray-350 text-xs">•</span>
-                          <span className="text-[10px] text-gray-400 font-mono flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                            <span>{art.wordCount} শব্দ</span>
-                            <span className="text-slate-300">|</span>
-                            <span className="text-indigo-600/80 font-semibold flex items-center gap-0.5 bg-indigo-50/50 px-1.5 py-0.2 rounded-sm" title="মোট পঠন সংখ্যা">
-                              👁️ {art.reads || 0} বার
+                          <span className="text-xs text-neutral-800 font-bold group-hover/author:underline">{art.writerName}</span>
+                          <span className="text-neutral-300 text-xs">•</span>
+                          <span className="text-[10px] text-neutral-400 font-sans flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <span><span className="font-digits">{art.wordCount}</span> শব্দ</span>
+                            <span className="text-neutral-700 bg-neutral-200/50 px-1.5 py-0.2 rounded" title="মোট পঠন সংখ্যা">
+                              👁️ <span className="font-digits">{art.reads || 0}</span> বার
                             </span>
                           </span>
                         </div>

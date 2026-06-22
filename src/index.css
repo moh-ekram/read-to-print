@@ -2,14 +2,20 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Hind Siliguri", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: "Noto Serif Bengali", "Hind Siliguri", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Times New Roman", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 body {
-  font-family: "Hind Siliguri", "Inter", sans-serif;
+  font-family: "Noto Serif Bengali", "Hind Siliguri", "Inter", sans-serif;
+  background-color: #faf9f6; /* Paper/Alabaster white */
+  color: #171717; /* Off-black */
 }
 
 .font-editorial {
   font-family: "Noto Serif Bengali", Georgia, serif;
+}
+
+.font-digits {
+  font-family: "Times New Roman", Georgia, serif;
 }

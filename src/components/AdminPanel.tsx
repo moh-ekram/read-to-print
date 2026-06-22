@@ -79,116 +79,100 @@ export default function AdminPanel({
     <div className="space-y-6" id="admin-panel">
       
       {/* read2print commission revenue overview */}
-      <div className="bg-slate-900 text-white p-5 rounded-2xl shadow-md border border-slate-950 flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in">
+      <div className="bg-transparent text-neutral-900 py-4 border-b border-neutral-300 flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="space-y-1 text-center md:text-left">
-          <span className="bg-indigo-600/30 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest leading-none">
-            🛡️ read2print platform commission pool
-          </span>
-          <h3 className="text-base font-black text-white mt-1">কো-অর্ডিনেশন ও ২৫% কমিশন প্যানেল রিপোর্টিং</h3>
-          <p className="text-[11px] text-slate-350 leading-normal max-w-2xl">
-            নীতিমালা অনুযায়ী প্রতিটি কয়েন উপার্জনের (আনলক ও গিফটস) <b>২৫% কমিশন</b> প্ল্যাটফর্ম ফান্ডে জমা হয়। অনুমোদন পাওয়া লেখকদের নমুনা লেখাগুলো সরাসরি হোমপেজে প্রচারিত হয়।
+          <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 font-mono">
+            <span>[রেভিনিউ মডারেশন]</span>
+            <span>-</span>
+            <span>প্ল্যাটফর্ম রাজস্ব অ্যাকাউন্ট</span>
+          </div>
+          <h3 className="text-base font-bold text-neutral-950">মডারেশন ও রাজস্ব রিপোর্টিং</h3>
+          <p className="text-xs text-neutral-500 leading-normal max-w-2xl">
+            নীতিমালা অনুযায়ী প্রতিটি কয়েন উপার্জনের (আনলক ও উপহার) ২৫% কমিশন প্ল্যাটফর্ম ফান্ডে জমা হয়।
           </p>
         </div>
-        <div className="bg-white/5 rounded-xl px-6 py-3 border border-white/10 text-center shrink-0 min-w-[200px]">
-          <p className="text-[9px] text-indigo-300 font-bold uppercase tracking-wider">রিসার্ভ কমিশন ব্যালেন্স</p>
-          <span className="text-3xl font-black text-amber-400 font-mono flex items-center justify-center gap-1 mt-1">
-            🪙 {platformRevenue}
+        <div className="bg-[#faf9f6]/80 rounded-md px-4 py-2 border border-neutral-300 text-center shrink-0 min-w-[200px]">
+          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider font-mono">রিসার্ভ কমিশন ব্যালেন্স</p>
+          <span className="text-2xl font-black text-neutral-950 font-serif flex items-center justify-center gap-1 mt-1">
+            🪙 {platformRevenue} কয়েন
           </span>
-          <p className="text-[9px] text-slate-400 mt-0.5 font-mono">৳{(platformRevenue * 1.0).toFixed(1)} টাকা সমপরিমাণ (১ কয়েন = ১ টাকা)</p>
+          <p className="text-[10px] text-neutral-450 mt-0.5 font-mono">৳{(platformRevenue * 1.0).toFixed(1)} টাকা সমপরিমাণ</p>
         </div>
       </div>
 
       {/* Top Admin Status Counters */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-
-        <div className="bg-white p-5 rounded-xl shadow-xs border border-slate-200 flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs text-slate-500 font-medium">মোট কাস্টম অর্ডার</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-800 font-mono">{orders.length}</h3>
-          </div>
-          <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-            <Package className="w-6 h-6" />
-          </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-[#faf9f6]/50 p-4 border border-neutral-300">
+          <p className="text-[10px] text-neutral-455 font-bold uppercase font-mono tracking-widest">কাস্টম অর্ডার</p>
+          <h3 className="text-xl font-black text-neutral-950 font-mono mt-1">{orders.length}</h3>
+          <span className="text-[9px] text-neutral-400 font-mono block border-t border-neutral-200 mt-1.5 pt-0.5">মোট রিসিভড</span>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow-xs border border-slate-200 flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs text-slate-500 font-medium">আয়কৃত রেভিনিউ</p>
-            <h3 className="text-xl md:text-2xl font-black text-indigo-600 font-mono">{totalEarnings.toFixed(1)} ৳</h3>
-          </div>
-          <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-            <TrendingUp className="w-6 h-6" />
-          </div>
+        <div className="bg-[#faf9f6]/50 p-4 border border-neutral-300">
+          <p className="text-[10px] text-neutral-455 font-bold uppercase font-mono tracking-widest">রেভিনিউ</p>
+          <h3 className="text-xl font-black text-neutral-950 font-mono mt-1">{totalEarnings.toFixed(1)} ৳</h3>
+          <span className="text-[9px] text-neutral-400 font-mono block border-t border-neutral-200 mt-1.5 pt-0.5 font-sans">সব পেমেন্ট</span>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow-xs border border-slate-200 flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs text-slate-500 font-medium">মোট মুদ্রিত A4 পৃষ্ঠা</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-800 font-mono">{totalPrintedA4Pages}</h3>
-          </div>
-          <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-            <Printer className="w-6 h-6" />
-          </div>
+        <div className="bg-[#faf9f6]/50 p-4 border border-neutral-300">
+          <p className="text-[10px] text-neutral-455 font-bold uppercase font-mono tracking-widest">মুদ্রিত A4 পৃষ্ঠা</p>
+          <h3 className="text-xl font-black text-neutral-950 font-mono mt-1">{totalPrintedA4Pages}</h3>
+          <span className="text-[9px] text-neutral-400 font-mono block border-t border-neutral-200 mt-1.5 pt-0.5">সংকলনে প্রিন্ট</span>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow-xs border border-slate-200 flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs text-slate-500 font-medium font-bold text-slate-705">মোট প্রবন্ধ প্রকাশ</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-800">
-              {articles.filter(a => a.status === 'published').length} টি
-            </h3>
-          </div>
-          <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-            <BookOpen className="w-6 h-6" />
-          </div>
+        <div className="bg-[#faf9f6]/50 p-4 border border-neutral-300">
+          <p className="text-[10px] text-neutral-455 font-bold uppercase font-mono tracking-widest">প্রবন্ধ প্রকাশ</p>
+          <h3 className="text-xl font-black text-neutral-950 font-mono mt-1">
+            {articles.filter(a => a.status === 'published').length} টি
+          </h3>
+          <span className="text-[9px] text-neutral-400 font-mono block border-t border-neutral-200 mt-1.5 pt-0.5">লাইভ কলাম</span>
         </div>
       </div>
 
       {/* Admin Panel Nav tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex flex-wrap border-b border-neutral-300 items-center gap-x-4 gap-y-1.5 py-1 text-xs">
         <button
           onClick={() => setActiveSubTab('orders')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`py-2 px-1 transition-all ${
             activeSubTab === 'orders' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              ? 'text-neutral-950 border-b-2 border-neutral-950 font-black' 
+              : 'text-neutral-450 hover:text-neutral-950'
           }`}
         >
-          <Package className="w-4 h-4" />
-          আগত কাস্টম অর্ডারসমূহ ({orders.length})
+          [ অর্ডারসমূহ ({orders.length}) ]
         </button>
+        <span className="text-neutral-300">/</span>
         <button
           onClick={() => setActiveSubTab('content-moderation')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`py-2 px-1 transition-all ${
             activeSubTab === 'content-moderation' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              ? 'text-neutral-950 border-b-2 border-neutral-950 font-black' 
+              : 'text-neutral-455 hover:text-neutral-950'
           }`}
         >
-          <ShieldAlert className="w-4 h-4" />
-          কন্টেন্ট মডারেশন (Spam Filter)
+          কন্টেন্ট মডারেশন
         </button>
+        <span className="text-neutral-300">/</span>
         <button
           onClick={() => setActiveSubTab('writer-list')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`py-2 px-1 transition-all ${
             activeSubTab === 'writer-list' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              ? 'text-neutral-950 border-b-2 border-neutral-950 font-black' 
+              : 'text-neutral-455 hover:text-neutral-950'
           }`}
         >
-          <Users className="w-4 h-4" />
-          লেখক ও ইউজার তালিকা
+          লেখক ও ইউজার
         </button>
+        <span className="text-neutral-300">/</span>
         <button
           onClick={() => setActiveSubTab('writer-requests')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`py-2 px-1 transition-all ${
             activeSubTab === 'writer-requests' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              ? 'text-neutral-950 border-b-2 border-neutral-950 font-black' 
+              : 'text-neutral-455 hover:text-neutral-950'
           }`}
         >
-          <Clock className="w-4 h-4" />
-          লেখক হওয়ার আবেদনপত্র ({writerApplications.filter(a => a.status === 'pending').length})
+          আবেদনপত্র ({writerApplications.filter(a => a.status === 'pending').length})
         </button>
       </div>
 
