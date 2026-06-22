@@ -2,12 +2,8 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
-import { fileURLToPath } from "url";
 // Vite will be imported dynamically in dev mode to prevent production loading overhead
 import { INITIAL_ARTICLES } from "./src/data";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
