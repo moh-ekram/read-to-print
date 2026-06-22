@@ -3,7 +3,8 @@ import { Article, CartItem, Order, Writer, ReaderUser } from '../types';
 import { 
   BookOpen, Search, Filter, Bookmark, ShoppingBag, ArrowRight, BookMarked, 
   Trash2, HelpCircle, MapPin, Phone, CreditCard, ChevronRight, CheckCircle2, 
-  Layers, Settings, Sparkles, User, Printer, Eye, Share2, Info, Newspaper, Download, FileText, Coins, Clock, Star
+  Layers, Settings, Sparkles, User, Printer, Eye, Share2, Info, Newspaper, Download, FileText, Coins, Clock, Star,
+  Home, Users, PenTool
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import WriterPanel from './WriterPanel';
@@ -485,70 +486,122 @@ export default function ReaderPanel({
         </div>
       </div>
 
-      {/* Primary Inner Segment Tabs - separated clean spacing, no slashes or brackets, soft color-shaded active indicator */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 py-2 text-xs">
+      {/* Facebook-style Compact Interactive Icon Navigation Bar */}
+      <div className="border border-slate-250 bg-[#faf9f6]/95 backdrop-blur-xs rounded-2xl shadow-xs py-2 px-3 flex items-center justify-around md:justify-start gap-1 md:gap-3 overflow-x-auto" id="reader-panel-navigation">
         <button
           onClick={() => { setActiveTab('discover'); setCheckoutStep('cart'); }}
-          className={`py-1.5 px-3 transition-all rounded-md ${
+          title="হোম পেজ"
+          className={`relative p-2 md:py-1.5 md:px-3 text-xs transition-all rounded-xl flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'discover' 
-              ? 'bg-[#eae7df] text-neutral-950 font-black' 
-              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
+              ? 'bg-[#1e293b] text-white shadow-sm font-black' 
+              : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
           }`}
         >
-          হোম পেজ
+          <Home className="w-5 h-5 shrink-0" />
+          <span className="hidden sm:inline font-bold">হোম পেজ</span>
+          {activeTab === 'discover' && (
+            <motion.span layoutId="active-dot" className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+          )}
         </button>
+
         <button
           onClick={() => { setActiveTab('my-profile'); }}
-          className={`py-1.5 px-3 transition-all rounded-md ${
+          title="আমার প্রোফাইল ও লেখক প্যানেল"
+          className={`relative p-2 md:py-1.5 md:px-3 text-xs transition-all rounded-xl flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'my-profile' 
-              ? 'bg-[#eae7df] text-neutral-950 font-black' 
-              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
+              ? 'bg-[#1e293b] text-white shadow-sm font-black' 
+              : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
           }`}
         >
-          আমার প্রোফাইল
+          {loggedInReader && loggedInReader.avatar ? (
+            <img 
+              src={loggedInReader.avatar} 
+              alt="Profile" 
+              className="w-5 h-5 rounded-full object-cover border border-slate-350 bg-white"
+            />
+          ) : (
+            <User className="w-5 h-5 shrink-0" />
+          )}
+          <span className="hidden sm:inline font-bold">আমার প্রোফাইল</span>
+          {activeTab === 'my-profile' && (
+            <motion.span layoutId="active-dot" className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+          )}
         </button>
+
         <button
           onClick={() => { setActiveTab('author-profiles'); setSelectedAuthorForProfile(null); }}
-          className={`py-1.5 px-3 transition-all rounded-md ${
+          title="লেখক প্রোফাইলসমূহ"
+          className={`relative p-2 md:py-1.5 md:px-3 text-xs transition-all rounded-xl flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'author-profiles' 
-              ? 'bg-[#eae7df] text-neutral-950 font-black' 
-              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
+              ? 'bg-[#1e293b] text-white shadow-sm font-black' 
+              : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
           }`}
         >
-          লেখক প্রোফাইলসমূহ
+          <Users className="w-5 h-5 shrink-0" />
+          <span className="hidden sm:inline font-bold">লেখকবৃন্দ</span>
+          {activeTab === 'author-profiles' && (
+            <motion.span layoutId="active-dot" className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+          )}
         </button>
+
         <button
           onClick={() => { setActiveTab('print-cart'); }}
-          className={`py-1.5 px-3 transition-all flex items-center gap-1.5 rounded-md ${
+          title="প্রিন্ট বাস্কেট"
+          className={`relative p-2 md:py-1.5 md:px-3 text-xs transition-all rounded-xl flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'print-cart' 
-              ? 'bg-[#eae7df] text-neutral-950 font-black' 
-              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
+              ? 'bg-[#1e293b] text-white shadow-sm font-black' 
+              : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
           }`}
         >
-          প্রিন্ট বাস্কেট 
-          <span className="font-digits text-[10px] bg-neutral-100 text-neutral-850 px-1 py-0.2 rounded-xs select-none">
-            {cart.length}
-          </span>
+          <div className="relative flex items-center justify-center">
+            <ShoppingBag className="w-5 h-5 shrink-0" />
+            {cart.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 font-digits text-[9px] font-black bg-rose-500 text-white w-4.5 h-4.5 rounded-full flex items-center justify-center select-none scale-85 animate-bounce">
+                {cart.length}
+              </span>
+            )}
+          </div>
+          <span className="hidden sm:inline font-bold">বাস্কেট</span>
+          {activeTab === 'print-cart' && (
+            <motion.span layoutId="active-dot" className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+          )}
         </button>
+
         <button
           onClick={() => { setActiveTab('coin-store'); }}
-          className={`py-1.5 px-3 transition-all flex items-center gap-1.5 rounded-md ${
+          title="রিডার কয়েন ও ব্যালেন্স রেট"
+          className={`relative p-2 md:py-1.5 md:px-3 text-xs transition-all rounded-xl flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'coin-store' 
-              ? 'bg-[#eae7df] text-neutral-950 font-black' 
-              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
+              ? 'bg-[#1e293b] text-white shadow-sm font-black' 
+              : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
           }`}
         >
-          ব্যালেন্স <span className="font-digits font-bold bg-[#eae7df]/80 px-1 py-0.2 rounded text-neutral-800">{readerCoins} কয়েন</span>
+          <div className="relative flex items-center justify-center">
+            <Coins className="w-5 h-5 text-amber-500 shrink-0" />
+            <span className="absolute -top-2 -right-2 bg-amber-500 text-[8px] tracking-tighter font-black font-digits text-white px-1 py-0.2 rounded-full select-none scale-85">
+              {readerCoins}
+            </span>
+          </div>
+          <span className="hidden sm:inline font-bold">ব্যালেন্স</span>
+          {activeTab === 'coin-store' && (
+            <motion.span layoutId="active-dot" className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+          )}
         </button>
+
         <button
           onClick={() => { setActiveTab('become-writer'); }}
-          className={`py-1.5 px-3 transition-all rounded-md ${
+          title="লেখক হিসেবে আবেদন করুন"
+          className={`relative p-2 md:py-1.5 md:px-3 text-xs transition-all rounded-xl flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'become-writer' 
-              ? 'bg-[#eae7df] text-neutral-950 font-black' 
-              : 'text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100/50'
+              ? 'bg-[#1e293b] text-white shadow-sm font-black' 
+              : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
           }`}
         >
-          লেখক আবেদন
+          <PenTool className="w-5 h-5 shrink-0" />
+          <span className="hidden sm:inline font-bold">লেখক আবেদন</span>
+          {activeTab === 'become-writer' && (
+            <motion.span layoutId="active-dot" className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+          )}
         </button>
       </div>
 
