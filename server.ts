@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
+// Vite will be imported dynamically in dev mode to prevent production loading overhead
 import { INITIAL_ARTICLES } from "./src/data";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -279,6 +279,7 @@ async function startServer() {
 
   // Setup Vite Dev Server / Static production assets serving
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
