@@ -2,12 +2,15 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
+import { db } from "@vercel/postgres";
 // Vite will be imported dynamically in dev mode to prevent production loading overhead
 import { INITIAL_ARTICLES } from "./src/data";
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
+  
+  const hasPostgres = !!process.env.POSTGRES_URL;
 
   // Middleware for parsing JSON requests
   app.use(express.json());
@@ -89,7 +92,74 @@ async function startServer() {
   }
 
   // 1. Core API Route: Get all articles (sorted newer first)
-  app.get("/api/articles/get", (req, res) => {
+  app.get("/api/articles/get", async (req, res) => {
+    if (hasPostgres) {
+      try {
+        const client = await db.connect();
+        // Auto-create table if not exists for instant compatibility
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS articles (
+            id SERIAL PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            content TEXT NOT NULL,
+            category VARCHAR(100) NOT NULL,
+            sub_category VARCHAR(100),
+            tags TEXT,
+            writer_id VARCHAR(100) DEFAULT 'w-admin',
+            author VARCHAR(255) NOT NULL,
+            writer_avatar TEXT,
+            status VARCHAR(50) DEFAULT 'published',
+            coins INT DEFAULT 0,
+            reads INT DEFAULT 0,
+            word_count INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        const result = await client.query(`
+          SELECT 
+            id, 
+            title, 
+            content, 
+            category, 
+            sub_category AS "subCategory", 
+            tags, 
+            writer_id AS "writerId", 
+            author, 
+            writer_avatar AS "writerAvatar", 
+            status, 
+            coins, 
+            reads, 
+            word_count AS "wordCount", 
+            created_at AS "created_at"
+          FROM articles 
+          ORDER BY created_at DESC
+        `);
+        client.release();
+        
+        const mapped = result.rows.map((art: any) => ({
+          id: art.id.toString(),
+          title: art.title,
+          content: art.content,
+          category: art.category,
+          subCategory: art.subCategory || "",
+          tags: art.tags ? (typeof art.tags === 'string' ? art.tags.split(',') : art.tags) : [],
+          writerId: art.writerId || "w-admin",
+          writerName: art.author || "মডারেটর",
+          writerAvatar: art.writerAvatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+          status: art.status || "published",
+          createdAt: art.created_at ? new Date(art.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          created_at: art.created_at || new Date().toISOString(),
+          reads: art.reads || 0,
+          wordCount: art.wordCount || art.content?.split(/\s+/).filter(Boolean).length || 0,
+          requiredCoins: art.coins ?? 0,
+          coins: art.coins ?? 0
+        }));
+        return res.json(mapped);
+      } catch (err: any) {
+        console.error("Vercel Postgres reading failed, falling back to local file:", err);
+      }
+    }
+
     try {
       const articles = getArticlesFromFile();
       // Map properties for pristine consistency with standard schema
@@ -118,7 +188,7 @@ async function startServer() {
   });
 
   // 2. Core API Route: Create/insert a brand new article
-  app.post("/api/articles/create", (req, res) => {
+  app.post("/api/articles/create", async (req, res) => {
     try {
       const { 
         title, 
@@ -136,6 +206,88 @@ async function startServer() {
       
       if (!title || !content || !category || !author) {
         return res.status(400).json({ error: "Missing mandatory fields: title, content, category, and author are required." });
+      }
+
+      if (hasPostgres) {
+        try {
+          const client = await db.connect();
+          await client.query(`
+            CREATE TABLE IF NOT EXISTS articles (
+              id SERIAL PRIMARY KEY,
+              title VARCHAR(255) NOT NULL,
+              content TEXT NOT NULL,
+              category VARCHAR(100) NOT NULL,
+              sub_category VARCHAR(100),
+              tags TEXT,
+              writer_id VARCHAR(100) DEFAULT 'w-admin',
+              author VARCHAR(255) NOT NULL,
+              writer_avatar TEXT,
+              status VARCHAR(50) DEFAULT 'published',
+              coins INT DEFAULT 0,
+              reads INT DEFAULT 0,
+              word_count INT DEFAULT 0,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+          `);
+
+          const resolvedTags = Array.isArray(tags) ? tags.join(',') : (typeof tags === 'string' ? tags : '');
+          const resolvedWordCount = wordCount || content.split(/\s+/).filter(Boolean).length;
+
+          const result = await client.query(
+            `INSERT INTO articles (
+              title, 
+              content, 
+              category, 
+              sub_category, 
+              tags, 
+              writer_id, 
+              author, 
+              writer_avatar, 
+              status, 
+              coins, 
+              word_count,
+              reads
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0)
+            RETURNING *`,
+            [
+              title,
+              content,
+              category,
+              subCategory,
+              resolvedTags,
+              writerId,
+              author,
+              writerAvatar,
+              status,
+              Number(coins) || 0,
+              resolvedWordCount
+            ]
+          );
+          client.release();
+
+          const row = result.rows[0];
+          const newArticle = {
+            id: row.id.toString(),
+            title: row.title,
+            content: row.content,
+            category: row.category,
+            subCategory: row.sub_category || "",
+            tags: row.tags ? row.tags.split(',') : [],
+            writerId: row.writer_id || "w-admin",
+            writerName: row.author,
+            writerAvatar: row.writer_avatar,
+            status: row.status,
+            createdAt: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            created_at: row.created_at,
+            reads: row.reads || 0,
+            wordCount: row.word_count || 0,
+            requiredCoins: row.coins || 0,
+            coins: row.coins || 0
+          };
+          return res.status(201).json(newArticle);
+        } catch (err: any) {
+          console.error("Vercel Postgres create failed, falling back to local file:", err);
+        }
       }
 
       const articles = getArticlesFromFile();
@@ -171,15 +323,95 @@ async function startServer() {
   });
 
   // 3. User Authentication endpoints
-  app.post("/api/auth/register", (req, res) => {
+  app.post("/api/auth/register", async (req, res) => {
     try {
       const { name, username, password, avatar, bio } = req.body;
       if (!name || !username || !password) {
         return res.status(400).json({ error: "Name, Username, and Password are required." });
       }
 
-      const users = getUsersFromFile();
       const lowerUsername = username.trim().toLowerCase();
+
+      if (hasPostgres) {
+        try {
+          const client = await db.connect();
+          await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+              id SERIAL PRIMARY KEY,
+              name VARCHAR(255) NOT NULL,
+              username VARCHAR(255) UNIQUE NOT NULL,
+              password_hash VARCHAR(255) NOT NULL,
+              salt VARCHAR(255) NOT NULL,
+              avatar TEXT,
+              coins INT DEFAULT 200,
+              spent_amount DECIMAL(10, 2) DEFAULT 0.00,
+              bio TEXT,
+              role VARCHAR(50) DEFAULT 'reader',
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+          `);
+
+          const userCheck = await client.query(
+            "SELECT id FROM users WHERE username = $1",
+            [lowerUsername]
+          );
+
+          if (userCheck.rows.length > 0) {
+            client.release();
+            return res.status(409).json({ error: "Username already exists. Please choose another username." });
+          }
+
+          const { hash, salt } = localHashPassword(password);
+          const userAvatar = avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(username)}`;
+          const userBio = bio || "মুদ্রণ ও সাহিত্যপ্রেমী কলাম পাঠক।";
+
+          const result = await client.query(
+            `INSERT INTO users (
+              name, 
+              username, 
+              password_hash, 
+              salt, 
+              avatar, 
+              coins, 
+              spent_amount, 
+              bio, 
+              role
+            ) VALUES ($1, $2, $3, $4, $5, 200, 0.00, $6, 'reader')
+            RETURNING id, name, username, avatar, coins, spent_amount, bio, role`,
+            [
+              name.trim(),
+              lowerUsername,
+              hash,
+              salt,
+              userAvatar,
+              userBio
+            ]
+          );
+
+          client.release();
+          const newUser = result.rows[0];
+
+          return res.status(201).json({
+            success: true,
+            message: "Registration successful!",
+            user: {
+              id: newUser.id.toString(),
+              name: newUser.name,
+              username: newUser.username,
+              avatar: newUser.avatar,
+              currentCoins: newUser.coins,
+              spentAmount: Number(newUser.spent_amount) || 0,
+              bio: newUser.bio,
+              role: newUser.role
+            },
+            token: "mock-jwt-token-" + newUser.id
+          });
+        } catch (dbErr: any) {
+          console.error("Vercel Postgres register failed, falling back to local file:", dbErr);
+        }
+      }
+
+      const users = getUsersFromFile();
 
       const existingUser = users.find((u: any) => u.username === lowerUsername);
       if (existingUser) {
@@ -227,15 +459,74 @@ async function startServer() {
     }
   });
 
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password } = req.body;
       if (!username || !password) {
         return res.status(400).json({ error: "Username and password are required." });
       }
 
-      const users = getUsersFromFile();
       const lowerUsername = username.trim().toLowerCase();
+
+      if (hasPostgres) {
+        try {
+          const client = await db.connect();
+          await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+              id SERIAL PRIMARY KEY,
+              name VARCHAR(255) NOT NULL,
+              username VARCHAR(255) UNIQUE NOT NULL,
+              password_hash VARCHAR(255) NOT NULL,
+              salt VARCHAR(255) NOT NULL,
+              avatar TEXT,
+              coins INT DEFAULT 200,
+              spent_amount DECIMAL(10, 2) DEFAULT 0.00,
+              bio TEXT,
+              role VARCHAR(50) DEFAULT 'reader',
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+          `);
+
+          const result = await client.query(
+            `SELECT id, name, username, password_hash, salt, avatar, coins, spent_amount, bio, role 
+             FROM users 
+             WHERE username = $1`,
+            [lowerUsername]
+          );
+
+          client.release();
+
+          if (result.rows.length === 0) {
+            return res.status(401).json({ error: "Invalid username or password. User not found." });
+          }
+
+          const dbUser = result.rows[0];
+          const isValid = localVerifyPassword(password, dbUser.password_hash, dbUser.salt);
+          if (!isValid) {
+            return res.status(401).json({ error: "Invalid username or password. Please try again." });
+          }
+
+          return res.json({
+            success: true,
+            message: "Login successful!",
+            user: {
+              id: dbUser.id.toString(),
+              name: dbUser.name,
+              username: dbUser.username,
+              avatar: dbUser.avatar,
+              currentCoins: dbUser.coins,
+              spentAmount: Number(dbUser.spent_amount) || 0,
+              bio: dbUser.bio,
+              role: dbUser.role
+            },
+            token: "mock-jwt-token-" + dbUser.id
+          });
+        } catch (dbErr: any) {
+          console.error("Vercel Postgres login failed, falling back to local file:", dbErr);
+        }
+      }
+
+      const users = getUsersFromFile();
 
       const user = users.find((u: any) => u.username === lowerUsername);
       if (!user) {
