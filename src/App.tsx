@@ -306,6 +306,40 @@ export default function App() {
     localStorage.setItem('r2p_articles', JSON.stringify(articles));
   }, [articles]);
 
+  // Load dyamic articles from database/API on mount
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const response = await fetch('/api/articles/get');
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const mapped = data.map((item: any) => ({
+              id: item.id?.toString(),
+              title: item.title,
+              content: item.content,
+              category: item.category,
+              subCategory: item.subCategory || "",
+              tags: Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(',') : []),
+              writerId: item.writerId || "w-admin",
+              writerName: item.writerName || item.author || "মডারেটর",
+              writerAvatar: item.writerAvatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+              status: item.status || "published",
+              createdAt: item.createdAt || item.created_at?.split('T')[0] || "2026-06-22",
+              reads: Number(item.reads) || 0,
+              wordCount: Number(item.wordCount) || item.content?.split(/\s+/).filter(Boolean).length || 0,
+              requiredCoins: Number(item.requiredCoins) || Number(item.coins) || 0
+            }));
+            setArticles(mapped);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load articles from dynamic database:", err);
+      }
+    };
+    fetchArticles();
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('r2p_cart', JSON.stringify(cart));
   }, [cart]);
@@ -347,8 +381,39 @@ export default function App() {
     }));
   };
 
-  const handleAddArticle = (newArticle: Article) => {
+  const handleAddArticle = async (newArticle: Article) => {
+    // Add locally for instant UI update
     setArticles(prev => [newArticle, ...prev]);
+    
+    try {
+      const response = await fetch('/api/articles/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: newArticle.title,
+          content: newArticle.content,
+          category: newArticle.category,
+          author: newArticle.writerName,
+          coins: newArticle.requiredCoins || 0,
+          subCategory: newArticle.subCategory || '',
+          tags: Array.isArray(newArticle.tags) ? newArticle.tags.join(',') : '',
+          writerId: newArticle.writerId,
+          writerAvatar: newArticle.writerAvatar,
+          status: newArticle.status,
+          wordCount: newArticle.wordCount
+        })
+      });
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Published article recorded dynamically in database:", result);
+      } else {
+        console.error("Failed to records article dynamically");
+      }
+    } catch (err) {
+      console.error("Failed to commit article publication to API:", err);
+    }
   };
 
   const handleUpdateArticle = (id: string, updatedFields: Partial<Article>) => {
