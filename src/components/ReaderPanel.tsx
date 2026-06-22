@@ -123,6 +123,79 @@ export default function ReaderPanel({
   const [viewingArticle, setViewingArticle] = useState<Article | null>(null);
   const [readingScrollProgress, setReadingScrollProgress] = useState(0);
 
+  // User login/registration auth inputs state
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authUsername, setAuthUsername] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authBio, setAuthBio] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authSuccess, setAuthSuccess] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+    setAuthLoading(true);
+
+    try {
+      if (authMode === 'register') {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: authName.trim(),
+            username: authUsername.trim(),
+            password: authPassword,
+            bio: authBio.trim()
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setAuthSuccess('রেজিস্ট্রেশন সফল হয়েছে! অনুগ্রহ করে লগইন করুন।');
+          setAuthMode('login');
+          setAuthPassword('');
+        } else {
+          setAuthError(data.error || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে।');
+        }
+      } else {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: authUsername.trim(),
+            password: authPassword
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setAuthSuccess('সফলভাবে লগইন হয়েছে!');
+          if (setLoggedInReader) {
+            setLoggedInReader(data.user);
+          }
+        } else {
+          setAuthError(data.error || 'লগইন ব্যর্থ হয়েছে।');
+        }
+      }
+    } catch (err) {
+      setAuthError('সার্ভার কানেকশন সমস্যা। অনুগ্রহ করে আবার চেষ্টা করুন।');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (setLoggedInReader) {
+      setLoggedInReader(null);
+    }
+    setAuthUsername('');
+    setAuthPassword('');
+    setAuthSuccess('');
+    setAuthError('');
+  };
+
+
   // Profile inner subtabs and shuffled writers states
   const [profileActiveTab, setProfileActiveTab] = useState<'shelf' | 'writer'>('shelf');
   const [shuffledWriters, setShuffledWriters] = useState<Writer[]>([]);
@@ -1650,32 +1723,221 @@ export default function ReaderPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-6"
+            className="space-y-6 max-w-4xl mx-auto"
           >
-            {!currentWriter ? (
-              <div className="bg-white p-8 rounded-2xl border border-dashed border-gray-200 text-center space-y-4 max-w-md mx-auto">
-                <FileText className="w-12 h-12 text-slate-400 mx-auto" />
-                <h3 className="text-sm font-bold text-gray-800">আপনি এখনও লেখক হিসেবে নিবন্ধিত নন!</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  নিজের প্রবন্ধ বা কলাম প্রকাশ করতে এবং রিডার কয়েন থেকে রয়্যালটি আয় করতে আজই লেখক হিসেবে রেজিস্ট্রেশন করুন।
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('become-writer')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm"
-                >
-                  লেখক হতে আবেদন করুন
-                </button>
+            {!loggedInReader ? (
+              // Beautiful Custom Credentials Auth Panel (JWT/Session simulator)
+              <div id="auth-panel-container" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden max-w-md mx-auto">
+                <div className="bg-[#1e293b] text-white p-6 text-center space-y-2">
+                  <h3 className="text-md font-black tracking-tight flex items-center justify-center gap-2">
+                    <User className="w-5 h-5" /> read2print একাউন্ট সিস্টেম
+                  </h3>
+                  <p className="text-xs text-slate-300">
+                    আর্টিকেল ম্যানেজ, কয়েন ব্যালেন্স সিঙ্ক এবং কলাম লিখতে লগইন করুন
+                  </p>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  {/* Toggle Modes Switch */}
+                  <div className="flex border border-slate-200 rounded-lg p-1 bg-slate-50">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('login');
+                        setAuthError('');
+                        setAuthSuccess('');
+                      }}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+                        authMode === 'login'
+                          ? 'bg-white text-slate-900 shadow-sm border border-slate-100'
+                          : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      লগইন করুন
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('register');
+                        setAuthError('');
+                        setAuthSuccess('');
+                      }}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+                        authMode === 'register'
+                          ? 'bg-white text-slate-900 shadow-sm border border-slate-100'
+                          : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      নিবন্ধন বা সাইন-আপ
+                    </button>
+                  </div>
+
+                  {/* Errors and Success feeds */}
+                  {authError && (
+                    <div className="p-3 bg-red-50 border border-red-100 text-red-650 text-xs rounded-xl flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-red-500 rounded-full shrink-0"></span>
+                      <span>{authError}</span>
+                    </div>
+                  )}
+                  {authSuccess && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs rounded-xl flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></span>
+                      <span>{authSuccess}</span>
+                    </div>
+                  )}
+
+                  {/* Login / Register Form */}
+                  <form onSubmit={handleAuthSubmit} className="space-y-4">
+                    {authMode === 'register' && (
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-gray-700">পূর্ণ নাম (Full Name)</label>
+                        <input
+                          type="text"
+                          required
+                          value={authName}
+                          onChange={(e) => setAuthName(e.target.value)}
+                          placeholder="উদা: আবদুল্লাহ আল মামুন"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-slate-500 focus:outline-none"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-bold text-gray-700">ইউজারনেম (Username)</label>
+                      <input
+                        type="text"
+                        required
+                        value={authUsername}
+                        onChange={(e) => setAuthUsername(e.target.value)}
+                        placeholder="উদা: mamun99"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-slate-500 focus:outline-none focus:border-slate-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-bold text-gray-700">পাসওয়ার্ড (Password)</label>
+                      <input
+                        type="password"
+                        required
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-slate-500 focus:outline-none focus:border-slate-500"
+                      />
+                    </div>
+
+                    {authMode === 'register' && (
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-gray-700">সংক্ষিপ্ত পরিচিতি (Bio)</label>
+                        <textarea
+                          value={authBio}
+                          onChange={(e) => setAuthBio(e.target.value)}
+                          placeholder="উদা: কবি ও কলাম পাঠক।"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs h-20 resize-none focus:ring-1 focus:ring-slate-500 focus:outline-none focus:border-slate-500"
+                        />
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={authLoading}
+                      className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors disabled:bg-slate-400 cursor-pointer"
+                    >
+                      {authLoading ? 'প্রক্রিয়াধীন...' : (authMode === 'login' ? 'সাইন-ইন করুন' : 'নতুন একাউন্ট খুলুন')}
+                    </button>
+                  </form>
+                </div>
               </div>
             ) : (
-              <WriterPanel
-                currentWriter={currentWriter}
-                articles={articles}
-                onUpdateWriter={onUpdateWriter}
-                onAddArticle={onAddArticle}
-                onDeleteArticle={onDeleteArticle}
-                onUpdateArticle={onUpdateArticle}
-              />
+              // Logged in User Profile dashboard & unified writer control pane
+              <div className="space-y-6 animate-fade-in">
+                {/* 1. Reader Profile summary card */}
+                <div id="profile-dashboard-card" className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={loggedInReader.avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(loggedInReader.username)}`}
+                        alt={loggedInReader.name}
+                        className="w-16 h-16 rounded-full object-cover border border-slate-200 p-1 bg-slate-50"
+                      />
+                      <div className="space-y-1">
+                        <h3 className="text-base font-black text-slate-900">{loggedInReader.name}</h3>
+                        <p className="text-xs text-slate-400 font-mono">@{loggedInReader.username}</p>
+                        <span className="inline-block px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold rounded-md">
+                          সংকলন পাঠক ({loggedInReader.role === 'writer' ? 'লেখক' : 'রিডার'})
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 items-center">
+                      {/* Interactive dynamic coin stats */}
+                      <div className="bg-amber-50 border border-amber-200/50 rounded-xl px-4 py-2 text-center shrink-0 min-w-[100px]">
+                        <p className="text-[10px] text-amber-600 font-bold tracking-tight">বর্তমান কয়েন</p>
+                        <p className="text-base font-black text-amber-700 flex items-center justify-center gap-1">
+                          <Coins className="w-4 h-4" /> {loggedInReader.currentCoins ?? 200}
+                        </p>
+                      </div>
+
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-center shrink-0 min-w-[100px]">
+                        <p className="text-[10px] text-slate-500 font-bold tracking-tight">মোট রিচার্জ</p>
+                        <p className="text-base font-black text-slate-700 font-mono">
+                          ৳{loggedInReader.spentAmount ?? 0}
+                        </p>
+                      </div>
+
+                      {/* Power action: Logout button */}
+                      <button
+                        onClick={handleLogout}
+                        className="px-4 py-2 bg-rose-50 border border-rose-100 hover:bg-rose-100/70 text-rose-600 text-xs font-bold rounded-xl self-center transition-colors shadow-2xs cursor-pointer"
+                      >
+                        লগআউট (Logout)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 space-y-2">
+                    <h4 className="text-xs font-bold text-slate-700">স্ব-পরিচিতি:</h4>
+                    <p className="text-xs text-slate-500 leading-relaxed italic">
+                      {loggedInReader.bio || "মুদ্রণ ও সাহিত্যপ্রেমী কলাম পাঠক।"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2. Unified writer section */}
+                <div className="pt-6 border-t border-slate-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-black text-slate-900 border-l-4 border-indigo-500 pl-2">
+                      লেখক নিয়ন্ত্রণ উইন্ডো (Writer Panel)
+                    </h3>
+                  </div>
+
+                  {!currentWriter ? (
+                    <div className="bg-white p-8 rounded-2xl border border-dashed border-gray-200 text-center space-y-4 max-w-md mx-auto shadow-xs">
+                      <FileText className="w-12 h-12 text-slate-400 mx-auto animate-pulse" />
+                      <h3 className="text-sm font-bold text-gray-800">আপনি এখনও লেখক হিসেবে নিবন্ধিত নন!</h3>
+                      <p className="text-xs text-gray-500 leading-relaxed">
+                        নিজের প্রবন্ধ বা কলাম প্রকাশ করতে এবং রিডার কয়েন থেকে রয়্যালটি আয় করতে আজই লেখক হিসেবে রেজিস্ট্রেশন করুন।
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('become-writer')}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
+                      >
+                        লেখক হতে আবেদন করুন
+                      </button>
+                    </div>
+                  ) : (
+                    <WriterPanel
+                      currentWriter={currentWriter}
+                      articles={articles}
+                      onUpdateWriter={onUpdateWriter}
+                      onAddArticle={onAddArticle}
+                      onDeleteArticle={onDeleteArticle}
+                      onUpdateArticle={onUpdateArticle}
+                    />
+                  )}
+                </div>
+              </div>
             )}
           </motion.div>
         )}

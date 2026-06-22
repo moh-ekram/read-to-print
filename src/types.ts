@@ -37,7 +37,9 @@ export interface ReaderUser {
   printCartCount: number; // number of products in print-ready queue/order or active cart
   bio?: string;
   savedArticlesCount?: number;
+  role?: 'reader' | 'writer';
 }
+
 
 export interface CartItem {
   articleId: string;

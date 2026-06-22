@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import { INITIAL_ARTICLES } from "./src/data";
@@ -18,6 +19,7 @@ async function startServer() {
   // Database Path inside workspace
   const DATA_DIR = path.join(process.cwd(), "data");
   const DB_FILE = path.join(DATA_DIR, "articles.json");
+  const USERS_FILE = path.join(DATA_DIR, "users.json");
 
   // Ensure directory exists
   if (!fs.existsSync(DATA_DIR)) {
@@ -50,6 +52,44 @@ async function startServer() {
     } catch (err) {
       console.error("Failed to write articles to database file:", err);
     }
+  }
+
+  // User database utilities
+  function getUsersFromFile() {
+    if (!fs.existsSync(USERS_FILE)) {
+      try {
+        fs.writeFileSync(USERS_FILE, JSON.stringify([], null, 2), "utf8");
+      } catch (err) {
+        console.error("Failed to write initial users file:", err);
+      }
+      return [];
+    }
+    try {
+      const content = fs.readFileSync(USERS_FILE, "utf8");
+      return JSON.parse(content);
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function saveUsersToFile(users: any[]) {
+    try {
+      fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
+    } catch (err) {
+      console.error("Failed to save users:", err);
+    }
+  }
+
+  // Crypto helpers (matching standard JWT & PBKDF2 logic)
+  function localHashPassword(password: string): { hash: string; salt: string } {
+    const salt = crypto.randomBytes(16).toString("hex");
+    const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
+    return { hash, salt };
+  }
+
+  function localVerifyPassword(password: string, hash: string, salt: string): boolean {
+    const checkHash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
+    return hash === checkHash;
   }
 
   // 1. Core API Route: Get all articles (sorted newer first)
@@ -134,8 +174,106 @@ async function startServer() {
     }
   });
 
+  // 3. User Authentication endpoints
+  app.post("/api/auth/register", (req, res) => {
+    try {
+      const { name, username, password, avatar, bio } = req.body;
+      if (!name || !username || !password) {
+        return res.status(400).json({ error: "Name, Username, and Password are required." });
+      }
+
+      const users = getUsersFromFile();
+      const lowerUsername = username.trim().toLowerCase();
+
+      const existingUser = users.find((u: any) => u.username === lowerUsername);
+      if (existingUser) {
+        return res.status(409).json({ error: "Username already exists. Please choose another username." });
+      }
+
+      const { hash, salt } = localHashPassword(password);
+      const userAvatar = avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(username)}`;
+      const userBio = bio || "মুদ্রণ ও সাহিত্যপ্রেমী কলাম পাঠক।";
+
+      const newUser = {
+        id: "usr-" + Date.now(),
+        name: name.trim(),
+        username: lowerUsername,
+        passwordHash: hash,
+        salt: salt,
+        avatar: userAvatar,
+        currentCoins: 200, // Dynamic free coins on signup
+        spentAmount: 0.00,
+        bio: userBio,
+        role: "reader",
+        createdAt: new Date().toISOString()
+      };
+
+      users.push(newUser);
+      saveUsersToFile(users);
+
+      res.status(201).json({
+        success: true,
+        message: "Registration successful!",
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          username: newUser.username,
+          avatar: newUser.avatar,
+          currentCoins: newUser.currentCoins,
+          spentAmount: newUser.spentAmount,
+          bio: newUser.bio,
+          role: newUser.role
+        },
+        token: "mock-jwt-token-" + newUser.id
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/auth/login", (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required." });
+      }
+
+      const users = getUsersFromFile();
+      const lowerUsername = username.trim().toLowerCase();
+
+      const user = users.find((u: any) => u.username === lowerUsername);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid username or password. User not found." });
+      }
+
+      const isValid = localVerifyPassword(password, user.passwordHash, user.salt);
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid username or password. Please try again." });
+      }
+
+      res.json({
+        success: true,
+        message: "Login successful!",
+        user: {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          avatar: user.avatar,
+          currentCoins: user.currentCoins,
+          spentAmount: user.spentAmount,
+          bio: user.bio,
+          role: user.role
+        },
+        token: "mock-jwt-token-" + user.id
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Health probe in case orchestration checks compatibility
   app.get("/api/health", (req, res) => {
+
     res.json({ status: "ok" });
   });
 
