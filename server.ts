@@ -7,6 +7,12 @@ import fs from "fs";
 import { db } from "@vercel/postgres";
 import { signJwt, hashPassword, verifyPassword } from "./lib/jwt";
 import { INITIAL_ARTICLES } from "./src/data";
+import { createClient } from "@supabase/supabase-js";
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL || "";
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
+const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 // In-memory fallbacks for local development when Vercel Postgres env vars are missing
 let fallbackArticles = [...INITIAL_ARTICLES];
@@ -342,16 +348,69 @@ async function startServer() {
     }
   });
 
-  // 3. POST /api/auth/register
-  app.post("/api/auth/register", async (req, res) => {
+  // Helper to handle registration logic using Supabase (with DB/fallback support if Supabase is offline/unconfigured)
+  const handleRegistrationLogic = async (req: express.Request, res: express.Response) => {
     try {
-      const { name, username, password, avatar, bio } = req.body;
-      if (!name || !username || !password) {
-        return res.status(400).json({ error: "Name, username, and password are required fields." });
+      const { name, username, password, avatar, bio, email, role } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required fields." });
       }
 
       const lowerUsername = username.trim().toLowerCase();
 
+      if (supabase) {
+        const userEmail = email || `${lowerUsername}@r2p.com`;
+        const userAvatar = avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(username)}`;
+        const userBio = bio || "মুদ্রণ ও সাহিত্যপ্রেমী কলাম পাঠক।";
+        const userRole = role || "reader";
+
+        const { data, error } = await supabase.auth.signUp({
+          email: userEmail,
+          password: password,
+          options: {
+            data: {
+              name: name || username,
+              username: lowerUsername,
+              avatar: userAvatar,
+              bio: userBio,
+              role: userRole,
+              coins: 200,
+              spent_amount: 0.00,
+              lifetime_coins: 200,
+              monthly_coins: 200,
+              balance_bdt: 0.00
+            }
+          }
+        });
+
+        if (error) {
+          return res.status(400).json({ error: error.message });
+        }
+
+        const userMetadata = data.user?.user_metadata || {};
+
+        return res.status(201).json({
+          success: true,
+          message: "Registration successful via Supabase!",
+          user: {
+            id: data.user?.id || "usr-" + Date.now(),
+            name: userMetadata.name || name || username,
+            username: userMetadata.username || lowerUsername,
+            avatar: userMetadata.avatar || userAvatar,
+            currentCoins: userMetadata.coins || 200,
+            spentAmount: userMetadata.spent_amount || 0,
+            bio: userMetadata.bio || userBio,
+            role: userMetadata.role || userRole,
+            lifetime_coins: userMetadata.lifetime_coins || 200,
+            monthly_coins: userMetadata.monthly_coins || 200,
+            balance_bdt: userMetadata.balance_bdt || 0.00
+          },
+          session: data.session,
+          token: data.session?.access_token || "mock-jwt-token"
+        });
+      }
+
+      // Fallback to Vercel Postgres or In-Memory
       if (hasPostgres) {
         let client;
         try {
@@ -376,7 +435,7 @@ async function startServer() {
             ) VALUES ($1, $2, $3, $4, $5, 200, 0.00, $6, 'reader', 200, 200, 0.00)
             RETURNING id, name, username, avatar, coins, spent_amount, bio, role, lifetime_coins, monthly_coins, balance_bdt
           `, [
-            name.trim(),
+            (name || username).trim(),
             lowerUsername,
             hash,
             salt,
@@ -411,9 +470,9 @@ async function startServer() {
             token
           });
         } catch (dbErr: any) {
-          console.error("[Database Error] POST /api/auth/register failed:", dbErr.stack || dbErr);
+          console.error("[Database Error] POST registration failed:", dbErr.stack || dbErr);
           return res.status(500).json({ 
-            error: "Registration failed on Vercel Postgres database connection.", 
+            error: "Registration failed on database connection.", 
             details: dbErr.message || String(dbErr)
           });
         } finally {
@@ -432,7 +491,7 @@ async function startServer() {
 
         const newUser: any = {
           id: "usr-" + Date.now(),
-          name: name.trim(),
+          name: (name || username).trim(),
           username: lowerUsername,
           password_hash: hash,
           salt: salt,
@@ -474,20 +533,58 @@ async function startServer() {
         });
       }
     } catch (e: any) {
-      console.error("[API Error] Inside /api/auth/register handler:", e.stack || e);
+      console.error("[API Error] Inside registration handler:", e.stack || e);
       return res.status(500).json({ error: "Internal server error" });
     }
-  });
+  };
 
-  // 4. POST /api/auth/login
-  app.post("/api/auth/login", async (req, res) => {
+  // Helper to handle login logic using Supabase (with DB/fallback support if Supabase is offline/unconfigured)
+  const handleLoginLogic = async (req: express.Request, res: express.Response) => {
     try {
-      const { username, password } = req.body;
-      if (!username || !password) {
-        return res.status(400).json({ error: "Username and password are required fields." });
+      const { username, password, email } = req.body;
+      if (!username && !email) {
+        return res.status(400).json({ error: "Username or email is required." });
+      }
+      if (!password) {
+        return res.status(400).json({ error: "Password is required." });
       }
 
-      const lowerUsername = username.trim().toLowerCase();
+      if (supabase) {
+        const userEmail = email || `${username.trim().toLowerCase()}@r2p.com`;
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: userEmail,
+          password: password,
+        });
+
+        if (error) {
+          return res.status(400).json({ error: error.message });
+        }
+
+        const userMetadata = data.user?.user_metadata || {};
+
+        return res.json({
+          success: true,
+          message: "Login successful via Supabase!",
+          user: {
+            id: data.user?.id || "usr-" + Date.now(),
+            name: userMetadata.name || username,
+            username: userMetadata.username || username,
+            avatar: userMetadata.avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(username || '')}`,
+            currentCoins: userMetadata.coins || 200,
+            spentAmount: userMetadata.spent_amount || 0,
+            bio: userMetadata.bio || "",
+            role: userMetadata.role || "reader",
+            lifetime_coins: userMetadata.lifetime_coins || 200,
+            monthly_coins: userMetadata.monthly_coins || 200,
+            balance_bdt: userMetadata.balance_bdt || 0.00
+          },
+          session: data.session,
+          token: data.session?.access_token || "mock-jwt-token"
+        });
+      }
+
+      const lowerUsername = username ? username.trim().toLowerCase() : "";
 
       if (hasPostgres) {
         let client;
@@ -534,9 +631,9 @@ async function startServer() {
             token
           });
         } catch (dbErr: any) {
-          console.error("[Database Error] POST /api/auth/login failed:", dbErr.stack || dbErr);
+          console.error("[Database Error] POST login failed:", dbErr.stack || dbErr);
           return res.status(500).json({ 
-            error: "Authentication failed on Vercel Postgres database connection.", 
+            error: "Authentication failed on database connection.", 
             details: dbErr.message || String(dbErr)
           });
         } finally {
@@ -580,10 +677,18 @@ async function startServer() {
         });
       }
     } catch (e: any) {
-      console.error("[API Error] Inside /api/auth/login handler:", e.stack || e);
+      console.error("[API Error] Inside login handler:", e.stack || e);
       return res.status(500).json({ error: "Internal server error" });
     }
-  });
+  };
+
+  // Official Supabase routes as requested by the user
+  app.post("/api/register", handleRegistrationLogic);
+  app.post("/api/login", handleLoginLogic);
+
+  // Maintain existing routes as wrappers to guarantee frontend works seamlessly
+  app.post("/api/auth/register", handleRegistrationLogic);
+  app.post("/api/auth/login", handleLoginLogic);
 
   // 5. POST /api/admin/monthly-closing
   app.post("/api/admin/monthly-closing", async (req, res) => {

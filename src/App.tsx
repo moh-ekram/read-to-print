@@ -25,12 +25,6 @@ export default function App() {
   const [adminLoginError, setAdminLoginError] = useState<string>('');
 
   const handleAdminTabClick = () => {
-    if (!loggedInReader || loggedInReader.role !== 'admin') {
-      alert('দুঃখিত! এই পেজটি শুধুমাত্র অ্যাডমিন রোলের ইউজারদের জন্য সংরক্ষিত। অনুগ্রহ করে প্রথমে অ্যাডমিন অ্যাকাউন্ট দিয়ে লগইন করুন।');
-      setUserRole('reader');
-      return;
-    }
-
     if (isAdminAuthenticated) {
       setUserRole('admin');
     } else {
@@ -42,10 +36,6 @@ export default function App() {
 
   const handleAdminLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loggedInReader || loggedInReader.role !== 'admin') {
-      setAdminLoginError('অ্যাডমিন রোল ছাড়া কোনো ব্যবহারকারী এখানে লগইন করতে পারবেন না।');
-      return;
-    }
 
     const correctPassword = (import.meta as any).env?.VITE_ADMIN_PASSWORD || 'admin2026';
     if (adminPasswordInput === correctPassword) {
@@ -185,11 +175,11 @@ export default function App() {
   // Admin Protection Guard Hook
   useEffect(() => {
     if (userRole === 'admin') {
-      if (!loggedInReader || loggedInReader.role !== 'admin' || !isAdminAuthenticated) {
+      if (!isAdminAuthenticated) {
         setUserRole('reader');
       }
     }
-  }, [userRole, loggedInReader, isAdminAuthenticated]);
+  }, [userRole, isAdminAuthenticated]);
 
   const [readerCoins, setReaderCoins] = useState<number>(() => {
     const saved = localStorage.getItem('r2p_reader_coins');
