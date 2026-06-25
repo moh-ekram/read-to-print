@@ -57,6 +57,9 @@ async function startServer() {
           spent_amount DECIMAL(10, 2) DEFAULT 0.00,
           bio TEXT,
           role VARCHAR(50) DEFAULT 'reader',
+          lifetime_coins INT DEFAULT 200,
+          monthly_coins INT DEFAULT 200,
+          balance_bdt DECIMAL(10, 2) DEFAULT 0.00,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
@@ -89,6 +92,9 @@ async function startServer() {
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS spent_amount DECIMAL(10, 2) DEFAULT 0.00",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'reader'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS lifetime_coins INT DEFAULT 200",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS monthly_coins INT DEFAULT 200",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS balance_bdt DECIMAL(10, 2) DEFAULT 0.00",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
 
         "ALTER TABLE articles ADD COLUMN IF NOT EXISTS sub_category VARCHAR(100)",
@@ -353,9 +359,9 @@ async function startServer() {
 
           const result = await client.query(`
             INSERT INTO users (
-              name, username, password_hash, salt, avatar, coins, spent_amount, bio, role
-            ) VALUES ($1, $2, $3, $4, $5, 200, 0.00, $6, 'reader')
-            RETURNING id, name, username, avatar, coins, spent_amount, bio, role
+              name, username, password_hash, salt, avatar, coins, spent_amount, bio, role, lifetime_coins, monthly_coins, balance_bdt
+            ) VALUES ($1, $2, $3, $4, $5, 200, 0.00, $6, 'reader', 200, 200, 0.00)
+            RETURNING id, name, username, avatar, coins, spent_amount, bio, role, lifetime_coins, monthly_coins, balance_bdt
           `, [
             name.trim(),
             lowerUsername,
@@ -384,7 +390,10 @@ async function startServer() {
               currentCoins: newUser.coins,
               spentAmount: Number(newUser.spent_amount) || 0,
               bio: newUser.bio,
-              role: newUser.role
+              role: newUser.role,
+              lifetime_coins: newUser.lifetime_coins || 200,
+              monthly_coins: newUser.monthly_coins || 200,
+              balance_bdt: Number(newUser.balance_bdt) || 0
             },
             token
           });
@@ -418,7 +427,10 @@ async function startServer() {
           coins: 200,
           spent_amount: 0.00,
           bio: userBio,
-          role: "reader"
+          role: "reader",
+          lifetime_coins: 200,
+          monthly_coins: 200,
+          balance_bdt: 0.00
         };
 
         fallbackUsers = [...fallbackUsers, newUser];
@@ -440,7 +452,10 @@ async function startServer() {
             currentCoins: newUser.coins,
             spentAmount: 0,
             bio: newUser.bio,
-            role: newUser.role
+            role: newUser.role,
+            lifetime_coins: newUser.lifetime_coins,
+            monthly_coins: newUser.monthly_coins,
+            balance_bdt: newUser.balance_bdt
           },
           token
         });
@@ -466,7 +481,7 @@ async function startServer() {
         try {
           client = await db.connect();
           const result = await client.query(`
-            SELECT id, name, username, password_hash, salt, avatar, coins, spent_amount, bio, role 
+            SELECT id, name, username, password_hash, salt, avatar, coins, spent_amount, bio, role, lifetime_coins, monthly_coins, balance_bdt 
             FROM users 
             WHERE username = $1
           `, [lowerUsername]);
@@ -498,7 +513,10 @@ async function startServer() {
               currentCoins: dbUser.coins,
               spentAmount: Number(dbUser.spent_amount) || 0,
               bio: dbUser.bio,
-              role: dbUser.role
+              role: dbUser.role,
+              lifetime_coins: dbUser.lifetime_coins || 200,
+              monthly_coins: dbUser.monthly_coins || 200,
+              balance_bdt: Number(dbUser.balance_bdt) || 0
             },
             token
           });
@@ -540,7 +558,10 @@ async function startServer() {
             currentCoins: user.coins,
             spentAmount: user.spent_amount,
             bio: user.bio,
-            role: user.role
+            role: user.role,
+            lifetime_coins: user.lifetime_coins || 200,
+            monthly_coins: user.monthly_coins || 200,
+            balance_bdt: user.balance_bdt || 0.00
           },
           token
         });

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Article, Order, Writer, WriterApplication, ReaderUser } from '../types';
+import { Article, Order, Writer, WriterApplication, ReaderUser, PayoutRequest } from '../types';
 import { 
   BarChart, Package, Users, AlertTriangle, Check, BookOpen, Clock, 
   MapPin, Phone, Download, Printer, ShieldAlert, Trash2, Eye, FileText, 
-  Trophy, TrendingUp, CheckCircle, RefreshCcw, Shield, CheckCircle2, XCircle, Search, Sparkles, Coins, User as UserIcon
+  Trophy, TrendingUp, CheckCircle, RefreshCcw, Shield, CheckCircle2, XCircle, Search, Sparkles, Coins, User as UserIcon, Wallet, ArrowRight, DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -20,6 +20,9 @@ interface AdminPanelProps {
   readers?: ReaderUser[];
   setReaders?: React.Dispatch<React.SetStateAction<ReaderUser[]>>;
   onUpdateArticle?: (id: string, updatedFields: Partial<Article>) => void;
+  payoutRequests?: PayoutRequest[];
+  onApprovePayout?: (requestId: string) => void;
+  onMonthlySettlement?: (poolAmount: number) => void;
 }
 
 export default function AdminPanel({
@@ -34,7 +37,10 @@ export default function AdminPanel({
   platformRevenue,
   readers = [],
   setReaders,
-  onUpdateArticle
+  onUpdateArticle,
+  payoutRequests = [],
+  onApprovePayout,
+  onMonthlySettlement
 }: AdminPanelProps) {
   const [activeSubTab, setActiveSubTab] = useState<'orders' | 'content-moderation' | 'writer-list' | 'writer-requests'>('orders');
   
@@ -44,6 +50,9 @@ export default function AdminPanel({
   const [adminUserListTab, setAdminUserListTab] = useState<'writers' | 'readers'>('writers');
   const [adminUserSearchQuery, setAdminUserSearchQuery] = useState('');
   const [selectedUserDetailInAdmin, setSelectedUserDetailInAdmin] = useState<{type: 'writer' | 'reader', data: any} | null>(null);
+  const [settlementPoolAmount, setSettlementPoolAmount] = useState<number>(() => {
+    return writers.reduce((sum, w) => sum + (w.monthly_coins || 0), 0) || 5000;
+  });
 
   const MOCK_READERS = [
     { id: 'usr-1', name: 'মোঃ হাসিবুর রহমান', username: 'hasib_99', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', currentCoins: 120, spentAmount: 150, totalCoinsPurchased: 300, printCartCount: 2, bio: 'বই পড়তে ভালোবাসি, বিশেষ করে বিজ্ঞান ও প্রযুক্তি বিষয়ক কলাম।', savedArticlesCount: 5 },
@@ -451,6 +460,138 @@ export default function AdminPanel({
 
             {adminUserListTab === 'writers' ? (
               <div className="space-y-4">
+                {/* Monthly Closing & Writer Cashout Dashboard */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Monthly Closing Panel */}
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-3xs space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <Wallet className="w-5 h-5 text-indigo-650" />
+                      <h4 className="font-extrabold text-slate-800 text-sm">মাসিক সেটেলমেন্ট ও ক্লোজিং (Settlement)</h4>
+                    </div>
+
+                    <div className="space-y-3.5">
+                      <div className="grid grid-cols-2 gap-2 text-center">
+                        <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                          <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider font-sans">চলতি মাসের সর্বমোট কয়েন</p>
+                          <p className="text-xl font-black text-indigo-700 font-mono mt-1">
+                            🪙 {writers.reduce((sum, w) => sum + (w.monthly_coins !== undefined ? w.monthly_coins : (w.coinBalance || 0)), 0)}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-100">
+                          <p className="text-[10px] font-bold text-amber-650 uppercase tracking-wider font-sans">বন্টনযোগ্য বাজেট পুুল</p>
+                          <p className="text-xl font-black text-amber-700 font-mono mt-1">
+                            ৳{settlementPoolAmount}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-500">চলতি মাসের রাইটার্স পুুল বাজেট (টাকা BDT)</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={settlementPoolAmount}
+                            onChange={(e) => setSettlementPoolAmount(Math.max(0, Number(e.target.value)))}
+                            className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-hidden focus:ring-1 focus:ring-indigo-500 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const totalCoins = writers.reduce((sum, w) => sum + (w.monthly_coins !== undefined ? w.monthly_coins : (w.coinBalance || 0)), 0);
+                              setSettlementPoolAmount(totalCoins * 1.0); // Default 1 coin = 1 BDT
+                            }}
+                            className="px-2.5 py-1.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-50"
+                          >
+                            রিসেট (১:১)
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const totalCoins = writers.reduce((sum, w) => sum + (w.monthly_coins !== undefined ? w.monthly_coins : (w.coinBalance || 0)), 0);
+                          if (totalCoins <= 0) {
+                            alert('দুঃখিত! চলতি মাসে কোনো লেখকের কোনো নতুন রয়্যালটি কয়েন জমা হয়নি। মাসিক ক্লোজিং সম্ভব নয়।');
+                            return;
+                          }
+                          if (confirm(`আপনি কি নিশ্চিতভাবে মাসিক সেটেলমেন্ট সম্পন্ন করতে চান?\n\nমোট কয়েন: ${totalCoins}\nমোট বাজেট: ৳${settlementPoolAmount}\n\nএটি সম্পন্ন হলে প্রতিটি লেখকের কয়েন অনুযায়ী BDT টাকা বন্টন হবে এবং সবার চলতি মাসের কয়েন ব্যালেন্স রিসেট হয়ে যাবে!`)) {
+                            if (onMonthlySettlement) {
+                              onMonthlySettlement(settlementPoolAmount);
+                            }
+                          }
+                        }}
+                        className="w-full py-2.5 bg-indigo-650 hover:bg-indigo-750 text-white text-xs font-bold rounded-lg transition-all shadow-md hover:scale-[1.01]"
+                      >
+                        মাসিক ক্লোজিং সম্পন্ন করুন
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cashout Requests Panel */}
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-3xs space-y-3 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100 mb-2">
+                        <DollarSign className="w-5 h-5 text-emerald-600" />
+                        <h4 className="font-extrabold text-slate-800 text-sm">লেখকদের ক্যাশআউট রিকোয়েস্টসমূহ</h4>
+                      </div>
+
+                      <div className="space-y-1.5 overflow-y-auto max-h-[175px] pr-1">
+                        {payoutRequests.length === 0 ? (
+                          <div className="text-center py-10 text-slate-455 italic text-xs">
+                            কোনো ক্যাশআউট আবেদন পেন্ডিং নেই।
+                          </div>
+                        ) : (
+                          payoutRequests.map((req) => (
+                            <div 
+                              key={req.id} 
+                              className={`p-2.5 rounded-xl border flex justify-between items-center text-xs transition-all ${
+                                req.status === 'paid' 
+                                  ? 'bg-slate-50/50 border-slate-150 opacity-80' 
+                                  : 'bg-emerald-50/20 border-emerald-100 shadow-2xs'
+                              }`}
+                            >
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-extrabold text-slate-800">{req.writerName}</span>
+                                  <span className="text-[10px] text-slate-455">@{req.writerUsername}</span>
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-500">
+                                  {req.paymentMethod.toUpperCase()}: <span className="font-mono text-slate-700">{req.accountNumber}</span>
+                                </p>
+                                <p className="text-[9px] text-slate-400 font-mono">{req.requestDate}</p>
+                              </div>
+
+                              <div className="text-right space-y-1.5 shrink-0">
+                                <div className="font-extrabold text-emerald-600 font-mono text-sm">৳{req.amount}</div>
+                                {req.status === 'pending' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (confirm(`আপনি কি "${req.writerName}"-কে ${req.paymentMethod.toUpperCase()} (${req.accountNumber}) এর মাধ্যমে ৳${req.amount} টাকা পরিশোধ করেছেন?`)) {
+                                        if (onApprovePayout) {
+                                          onApprovePayout(req.id);
+                                        }
+                                      }
+                                    }}
+                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] rounded-md transition-all shadow-2xs"
+                                  >
+                                    পেমেন্ট সম্পন্ন করুন
+                                  </button>
+                                ) : (
+                                  <span className="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase rounded-sm">
+                                    Paid
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Writers Spreadsheet-like Table */}
                 <div className="overflow-x-auto bg-white border border-slate-200 rounded-xl shadow-4xs">
                   <table id="admin-writers-table" className="min-w-full divide-y divide-slate-100 text-left text-xs font-sans">
@@ -461,7 +602,9 @@ export default function AdminPanel({
                         <th className="px-4 py-2.5 border-r border-slate-100">ইউজারনেম</th>
                         <th className="px-4 py-2.5 text-center border-r border-slate-100">প্রকাশনা</th>
                         <th className="px-4 py-2.5 text-center border-r border-slate-100">অনুসারী</th>
-                        <th className="px-4 py-2.5 text-center border-r border-slate-100">রয়্যালটি কয়েন</th>
+                        <th className="px-4 py-2.5 text-center border-r border-slate-100 text-slate-500">লাইফটাইম কয়েন</th>
+                        <th className="px-4 py-2.5 text-center border-r border-slate-100 text-amber-600">চলতি মাসের কয়েন</th>
+                        <th className="px-4 py-2.5 text-center border-r border-slate-100 text-emerald-600">ব্যালেন্স (BDT)</th>
                         <th className="px-4 py-2.5 text-center">বিশদ</th>
                       </tr>
                     </thead>
@@ -469,12 +612,16 @@ export default function AdminPanel({
                       {(() => {
                         const writersWithStats = writers.map((w) => {
                           const totalPubs = articles.filter(a => a.writerId === w.id).length;
-                          const coins = w.coinBalance || 0;
+                          const coins = w.lifetime_coins !== undefined ? w.lifetime_coins : (w.coinBalance || 0);
+                          const monthlyCoins = w.monthly_coins !== undefined ? w.monthly_coins : (w.coinBalance || 0);
+                          const balanceBdt = w.balance_bdt || 0;
                           const followers = w.followers || 0;
                           return {
                             ...w,
                             totalPubs,
                             coins,
+                            monthlyCoins,
+                            balanceBdt,
                             followers,
                           };
                         });
@@ -487,7 +634,7 @@ export default function AdminPanel({
                         if (filteredWritersForAdmin.length === 0) {
                           return (
                             <tr>
-                              <td colSpan={7} className="px-4 py-12 text-center text-slate-400 italic">
+                              <td colSpan={9} className="px-4 py-12 text-center text-slate-400 italic">
                                 কোনো লেখক অ্যাকাউন্ট মিল পাওয়া যায়নি।
                               </td>
                             </tr>
@@ -518,8 +665,14 @@ export default function AdminPanel({
                             <td className="px-4 py-2 text-center font-mono text-slate-700 border-r border-slate-100">
                               {w.followers}
                             </td>
-                            <td className="px-4 py-2 text-center font-mono text-emerald-600 font-bold border-r border-slate-100">
+                            <td className="px-4 py-2 text-center font-mono text-slate-500 font-bold border-r border-slate-100">
                               {w.coins}
+                            </td>
+                            <td className="px-4 py-2 text-center font-mono text-amber-600 font-bold border-r border-slate-100">
+                              {w.monthlyCoins}
+                            </td>
+                            <td className="px-4 py-2 text-center font-mono text-emerald-650 font-bold border-r border-slate-100">
+                              ৳{w.balanceBdt.toFixed(1)}
                             </td>
                             <td className="px-4 py-2 text-center">
                               <button

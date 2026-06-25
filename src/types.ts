@@ -6,6 +6,9 @@ export interface Writer {
   bio: string;
   followers: number;
   coinBalance?: number; // Author's earned coins
+  lifetime_coins?: number;
+  monthly_coins?: number;
+  balance_bdt?: number;
 }
 
 export interface Article {
@@ -38,6 +41,9 @@ export interface ReaderUser {
   bio?: string;
   savedArticlesCount?: number;
   role?: 'reader' | 'writer';
+  lifetime_coins?: number;
+  monthly_coins?: number;
+  balance_bdt?: number;
 }
 
 
@@ -82,4 +88,17 @@ export interface WriterApplication {
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: string;
 }
+
+export interface PayoutRequest {
+  id: string;
+  writerId: string;
+  writerName: string;
+  writerUsername: string;
+  amount: number;
+  paymentMethod: 'bkash' | 'nagad' | 'rocket';
+  accountNumber: string;
+  status: 'pending' | 'paid';
+  requestDate: string;
+}
+
 

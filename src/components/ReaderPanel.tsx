@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Article, CartItem, Order, Writer, ReaderUser } from '../types';
+import { Article, CartItem, Order, Writer, ReaderUser, PayoutRequest } from '../types';
 import { 
   BookOpen, Search, Filter, Bookmark, ShoppingBag, ArrowRight, BookMarked, 
   Trash2, HelpCircle, MapPin, Phone, CreditCard, ChevronRight, CheckCircle2, 
@@ -89,6 +89,8 @@ interface ReaderPanelProps {
   setReaders?: React.Dispatch<React.SetStateAction<ReaderUser[]>>;
   loggedInReader?: ReaderUser | null;
   setLoggedInReader?: React.Dispatch<React.SetStateAction<ReaderUser | null>>;
+  payoutRequests?: PayoutRequest[];
+  onSubmitPayoutRequest?: (amount: number, method: 'bkash' | 'nagad' | 'rocket', account: string) => void;
 }
 
 export default function ReaderPanel({
@@ -117,7 +119,9 @@ export default function ReaderPanel({
   readers = [],
   setReaders,
   loggedInReader,
-  setLoggedInReader
+  setLoggedInReader,
+  payoutRequests = [],
+  onSubmitPayoutRequest
 }: ReaderPanelProps) {
   const [activeTab, setActiveTab] = useState<'discover' | 'my-profile' | 'shelf' | 'print-cart' | 'coin-store' | 'author-profiles' | 'become-writer'>('discover');
   const [selectedAuthorForProfile, setSelectedAuthorForProfile] = useState<Writer | null>(null);
@@ -2008,6 +2012,8 @@ export default function ReaderPanel({
                       onAddArticle={onAddArticle}
                       onDeleteArticle={onDeleteArticle}
                       onUpdateArticle={onUpdateArticle}
+                      payoutRequests={payoutRequests}
+                      onSubmitPayoutRequest={onSubmitPayoutRequest}
                     />
                   )}
                 </div>

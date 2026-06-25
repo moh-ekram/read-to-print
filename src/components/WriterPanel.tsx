@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Article, Writer } from '../types';
-import { FileText, Save, Send, Eye, Plus, Trash2, Edit3, Sparkles, BookOpen, User, ArrowLeft, Bold, Quote, Heading, Coins } from 'lucide-react';
+import { Article, Writer, PayoutRequest } from '../types';
+import { FileText, Save, Send, Eye, Plus, Trash2, Edit3, Sparkles, BookOpen, User, ArrowLeft, Bold, Quote, Heading, Coins, Wallet, History, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface WriterPanelProps {
@@ -10,6 +10,8 @@ interface WriterPanelProps {
   onAddArticle: (article: Article) => void;
   onDeleteArticle: (id: string) => void;
   onUpdateArticle: (id: string, article: Partial<Article>) => void;
+  payoutRequests?: PayoutRequest[];
+  onSubmitPayoutRequest?: (amount: number, method: 'bkash' | 'nagad' | 'rocket', account: string) => void;
 }
 
 export default function WriterPanel({
@@ -18,7 +20,9 @@ export default function WriterPanel({
   onUpdateWriter,
   onAddArticle,
   onDeleteArticle,
-  onUpdateArticle
+  onUpdateArticle,
+  payoutRequests = [],
+  onSubmitPayoutRequest
 }: WriterPanelProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'editor'>('profile');
   
@@ -26,6 +30,15 @@ export default function WriterPanel({
   const [authorName, setAuthorName] = useState(currentWriter.name);
   const [authorBio, setAuthorBio] = useState(currentWriter.bio);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  // Wallet & Withdrawal State
+  const [withdrawAmount, setWithdrawAmount] = useState<number>(Math.floor(currentWriter.balance_bdt || 0));
+  const [withdrawMethod, setWithdrawMethod] = useState<'bkash' | 'nagad' | 'rocket'>('bkash');
+  const [withdrawAccount, setWithdrawAccount] = useState<string>('');
+
+  React.useEffect(() => {
+    setWithdrawAmount(Math.floor(currentWriter.balance_bdt || 0));
+  }, [currentWriter.balance_bdt]);
 
   // New Article Form State
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
@@ -299,6 +312,137 @@ export default function WriterPanel({
                       </button>
                     </div>
                   </form>
+                )}
+              </div>
+
+              {/* Writer's Financial Wallet */}
+              <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100 space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <Wallet className="w-5 h-5 text-indigo-650" />
+                  <h4 className="font-bold text-slate-800 text-sm">রয়্যালটি ওয়ালেট ও ট্র্যাকিং</h4>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">লাইফটাইম রয়্যালটি কয়েন</p>
+                    <p className="text-lg font-black text-slate-800 font-mono flex items-center gap-1">
+                      🪙 {currentWriter.lifetime_coins !== undefined ? currentWriter.lifetime_coins : (currentWriter.coinBalance || 0)}
+                    </p>
+                    <p className="text-[9px] text-slate-455 leading-tight">কখনোই শূন্য হবে না, রেটিং ও কলামিস্ট পদবির জন্য ট্র্যাকড</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-100 space-y-1">
+                      <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider font-mono">চলতি মাসের কয়েন</p>
+                      <p className="text-base font-black text-amber-600 font-mono flex items-center gap-0.5">
+                        🪙 {currentWriter.monthly_coins !== undefined ? currentWriter.monthly_coins : (currentWriter.coinBalance || 0)}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100 space-y-1">
+                      <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider font-mono">ব্যালেন্স (টাকা)</p>
+                      <p className="text-base font-black text-emerald-600 font-mono">
+                        ৳{(currentWriter.balance_bdt || 0).toFixed(1)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Withdraw Form / Requests */}
+                {onSubmitPayoutRequest && (
+                  <div className="pt-2 border-t border-slate-100 space-y-3">
+                    <h5 className="font-bold text-slate-800 text-xs">👛 ক্যাশআউট / পেমেন্ট উত্তোলন</h5>
+                    
+                    {currentWriter.balance_bdt && currentWriter.balance_bdt >= 50 ? (
+                      <div className="space-y-2.5">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-400 font-mono">উত্তোলনযোগ্য পরিমাণ (টাকা)</label>
+                          <input
+                            type="number"
+                            min={50}
+                            max={currentWriter.balance_bdt}
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(Number(e.target.value))}
+                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-hidden focus:ring-1 focus:ring-indigo-500 font-mono"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-400 font-mono">উত্তোলন মাধ্যম</label>
+                            <select
+                              value={withdrawMethod}
+                              onChange={(e) => setWithdrawMethod(e.target.value as any)}
+                              className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                            >
+                              <option value="bkash">বিকাশ (bKash)</option>
+                              <option value="nagad">নগদ (Nagad)</option>
+                              <option value="rocket">রকেট (Rocket)</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-400 font-mono">একাউন্ট নাম্বার</label>
+                            <input
+                              type="tel"
+                              placeholder="017xxxxxxxx"
+                              value={withdrawAccount}
+                              onChange={(e) => setWithdrawAccount(e.target.value)}
+                              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-hidden focus:ring-1 focus:ring-indigo-500 font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!withdrawAccount.trim()) {
+                              alert('দয়া করে সঠিক একাউন্ট নাম্বারটি লিখুন।');
+                              return;
+                            }
+                            onSubmitPayoutRequest(withdrawAmount, withdrawMethod, withdrawAccount);
+                            setWithdrawAccount('');
+                          }}
+                          className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm hover:scale-[1.01]"
+                        >
+                          পেমেন্ট রিকোয়েস্ট পাঠান
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-455 italic leading-relaxed">
+                        সর্বনিম্ন ৳৫০ টাকা BDT ব্যালেন্স থাকলে আপনি উত্তোলন করতে পারবেন। (মাসিক ক্লোজিংয়ের পর প্রতি ১ কয়েন = ১ টাকা রেশিওতে BDT ব্যালেন্স যোগ হয়।)
+                      </p>
+                    )}
+
+                    {/* Writer's own request history list */}
+                    {payoutRequests.filter(r => r.writerId === currentWriter.id).length > 0 && (
+                      <div className="space-y-2 pt-2 border-t border-slate-50">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono flex items-center gap-1">
+                          <History className="w-3.5 h-3.5 text-slate-400" />
+                          আপনার ক্যাশআউট হিস্ট্রি
+                        </p>
+                        <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                          {payoutRequests
+                            .filter(r => r.writerId === currentWriter.id)
+                            .map((r) => (
+                              <div key={r.id} className="p-2 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center text-[10px] font-sans">
+                                <div>
+                                  <p className="font-extrabold text-slate-800 font-mono">৳{r.amount} - {r.paymentMethod.toUpperCase()}</p>
+                                  <p className="text-[9px] text-slate-450 font-mono">{r.requestDate} • {r.accountNumber}</p>
+                                </div>
+                                <span className={`px-1.5 py-0.5 rounded-sm font-bold uppercase text-[9px] ${
+                                  r.status === 'paid' 
+                                    ? 'bg-emerald-100 text-emerald-800' 
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {r.status === 'paid' ? 'Paid' : 'Pending'}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

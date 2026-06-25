@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Writer, Article, CartItem, Order, ReaderUser } from './types';
+import { Writer, Article, CartItem, Order, ReaderUser, PayoutRequest } from './types';
 import { INITIAL_WRITERS, INITIAL_ARTICLES, INITIAL_READERS } from './data';
 import WriterPanel from './components/WriterPanel';
 import ReaderPanel from './components/ReaderPanel';
@@ -57,15 +57,24 @@ export default function App() {
 
   // Load state from localStorage or fallback
   const [writers, setWriters] = useState<Writer[]>(() => {
+    const ensureFinancials = (list: any[]): Writer[] => {
+      return list.map(w => ({
+        ...w,
+        lifetime_coins: w.lifetime_coins !== undefined ? w.lifetime_coins : (w.coinBalance || 0),
+        monthly_coins: w.monthly_coins !== undefined ? w.monthly_coins : Math.round((w.coinBalance || 0) * 0.35),
+        balance_bdt: w.balance_bdt !== undefined ? w.balance_bdt : Math.round((w.coinBalance || 0) * 0.7)
+      }));
+    };
+
     const saved = localStorage.getItem('r2p_writers');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.length < INITIAL_WRITERS.length) {
-        return INITIAL_WRITERS;
+        return ensureFinancials(INITIAL_WRITERS);
       }
-      return parsed;
+      return ensureFinancials(parsed);
     }
-    return INITIAL_WRITERS;
+    return ensureFinancials(INITIAL_WRITERS);
   });
 
   const [articles, setArticles] = useState<Article[]>(() => {
@@ -137,15 +146,24 @@ export default function App() {
   });
 
   const [readers, setReaders] = useState<ReaderUser[]>(() => {
+    const ensureFinancials = (list: any[]): ReaderUser[] => {
+      return list.map(r => ({
+        ...r,
+        lifetime_coins: r.lifetime_coins !== undefined ? r.lifetime_coins : 0,
+        monthly_coins: r.monthly_coins !== undefined ? r.monthly_coins : 0,
+        balance_bdt: r.balance_bdt !== undefined ? r.balance_bdt : 0
+      }));
+    };
+
     const saved = localStorage.getItem('r2p_readers');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.length < INITIAL_READERS.length) {
-        return INITIAL_READERS;
+        return ensureFinancials(INITIAL_READERS);
       }
-      return parsed;
+      return ensureFinancials(parsed);
     }
-    return INITIAL_READERS;
+    return ensureFinancials(INITIAL_READERS);
   });
 
   const [loggedInReader, setLoggedInReader] = useState<ReaderUser | null>(() => {
@@ -193,8 +211,116 @@ export default function App() {
     ];
   });
 
-  // Simple hardcoded active writer context for simulation
-  const currentWriter = writers[0]; // রবীন্দ্রনাথ দত্ত
+  // Dynamic active writer context based on logged in reader, or fallback to first writer
+  const currentWriter = writers.find(w => w.username === loggedInReader?.username) || writers[0];
+
+  const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>(() => {
+    const saved = localStorage.getItem('r2p_payout_requests');
+    if (saved) return JSON.parse(saved);
+    return [
+      {
+        id: 'PAY-1',
+        writerId: 'w1',
+        writerName: 'রবীন্দ্রনাথ দত্ত',
+        writerUsername: 'rabindradutta',
+        amount: 350,
+        paymentMethod: 'bkash',
+        accountNumber: '01711223344',
+        status: 'pending',
+        requestDate: '2026-06-25'
+      },
+      {
+        id: 'PAY-2',
+        writerId: 'w2',
+        writerName: 'ড. ফারহানা ইয়াসমিন',
+        writerUsername: 'farhana_sc',
+        amount: 1000,
+        paymentMethod: 'nagad',
+        accountNumber: '01855667788',
+        status: 'paid',
+        requestDate: '2026-06-24'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('r2p_payout_requests', JSON.stringify(payoutRequests));
+  }, [payoutRequests]);
+
+  const handleSubmitPayoutRequest = (amount: number, method: 'bkash' | 'nagad' | 'rocket', account: string) => {
+    if (!currentWriter) return;
+    if (currentWriter.balance_bdt < amount) {
+      alert('দুঃখিত! আপনার ব্যালেন্সে পর্যাপ্ত টাকা নেই।');
+      return;
+    }
+    const newReq: PayoutRequest = {
+      id: 'PAY-' + Date.now(),
+      writerId: currentWriter.id,
+      writerName: currentWriter.name,
+      writerUsername: currentWriter.username,
+      amount,
+      paymentMethod: method,
+      accountNumber: account,
+      status: 'pending',
+      requestDate: new Date().toISOString().split('T')[0]
+    };
+    setPayoutRequests(prev => [newReq, ...prev]);
+    alert('ক্যাশআউট রিকোয়েস্ট সফলভাবে সাবমিট করা হয়েছে! অ্যাডমিন শিগগিরই এটি প্রসেস করবেন।');
+  };
+
+  const handleApprovePayout = (requestId: string) => {
+    const req = payoutRequests.find(r => r.id === requestId);
+    if (!req) return;
+
+    // 1. Deduct from writer balance
+    setWriters(prev => prev.map(w => {
+      if (w.id === req.writerId) {
+        const newBalance = Math.max(0, (w.balance_bdt || 0) - req.amount);
+        return {
+          ...w,
+          balance_bdt: newBalance
+        };
+      }
+      return w;
+    }));
+
+    // 2. Mark request as paid
+    setPayoutRequests(prev => prev.map(r => {
+      if (r.id === requestId) {
+        return {
+          ...r,
+          status: 'paid'
+        };
+      }
+      return r;
+    }));
+
+    alert('পেমেন্ট সফলভাবে অনুমোদিত এবং পরিশোধিত হিসেবে চিহ্নিত করা হয়েছে!');
+  };
+
+  const handleMonthlySettlement = (poolAmount: number) => {
+    const totalMonthlyCoins = writers.reduce((sum, w) => sum + (w.monthly_coins || 0), 0);
+    if (totalMonthlyCoins <= 0) {
+      alert('কোনো চলতি মাসের কয়েন নেই!');
+      return;
+    }
+
+    setWriters(prev => prev.map(w => {
+      const monthlyCoins = w.monthly_coins || 0;
+      const ratio = monthlyCoins / totalMonthlyCoins;
+      const shareBdt = ratio * poolAmount;
+      const newBalance = (w.balance_bdt || 0) + shareBdt;
+
+      return {
+        ...w,
+        balance_bdt: Number(newBalance.toFixed(2)),
+        monthly_coins: 0, // Reset monthly coins
+        coinBalance: 0 // Reset current redeemable coin balance as it has been converted
+      };
+    }));
+
+    alert(`মাসিক ক্লোজিং ও রাজস্ব বন্টন সফল হয়েছে!\n\nমোট কয়েন: ${totalMonthlyCoins}\nবন্টনকৃত বাজেট: ৳${poolAmount}\n\nসব লেখকের চলতি মাসের কয়েন রিসেট করা হয়েছে এবং অর্জিত টাকা ওয়ালেটে যোগ হয়েছে।`);
+  };
 
   const handleAwardCoinsToWriter = (writerId: string, amount: number) => {
     const commission = Math.round(amount * 0.25);
@@ -204,7 +330,9 @@ export default function App() {
       if (w.id === writerId) {
         return {
           ...w,
-          coinBalance: (w.coinBalance || 0) + netAmount
+          coinBalance: (w.coinBalance || 0) + netAmount,
+          lifetime_coins: (w.lifetime_coins || 0) + netAmount,
+          monthly_coins: (w.monthly_coins || 0) + netAmount
         };
       }
       return w;
@@ -587,6 +715,8 @@ export default function App() {
                 setReaders={setReaders}
                 loggedInReader={loggedInReader}
                 setLoggedInReader={setLoggedInReader}
+                payoutRequests={payoutRequests}
+                onSubmitPayoutRequest={handleSubmitPayoutRequest}
               />
             )}
 
@@ -604,6 +734,9 @@ export default function App() {
                 readers={readers}
                 setReaders={setReaders}
                 onUpdateArticle={handleUpdateArticle}
+                payoutRequests={payoutRequests}
+                onApprovePayout={handleApprovePayout}
+                onMonthlySettlement={handleMonthlySettlement}
               />
             )}
           </motion.div>
