@@ -25,6 +25,12 @@ export default function App() {
   const [adminLoginError, setAdminLoginError] = useState<string>('');
 
   const handleAdminTabClick = () => {
+    if (!loggedInReader || loggedInReader.role !== 'admin') {
+      alert('দুঃখিত! এই পেজটি শুধুমাত্র অ্যাডমিন রোলের ইউজারদের জন্য সংরক্ষিত। অনুগ্রহ করে প্রথমে অ্যাডমিন অ্যাকাউন্ট দিয়ে লগইন করুন।');
+      setUserRole('reader');
+      return;
+    }
+
     if (isAdminAuthenticated) {
       setUserRole('admin');
     } else {
@@ -36,6 +42,11 @@ export default function App() {
 
   const handleAdminLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!loggedInReader || loggedInReader.role !== 'admin') {
+      setAdminLoginError('অ্যাডমিন রোল ছাড়া কোনো ব্যবহারকারী এখানে লগইন করতে পারবেন না।');
+      return;
+    }
+
     const correctPassword = (import.meta as any).env?.VITE_ADMIN_PASSWORD || 'admin2026';
     if (adminPasswordInput === correctPassword) {
       setIsAdminAuthenticated(true);
@@ -171,6 +182,15 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Admin Protection Guard Hook
+  useEffect(() => {
+    if (userRole === 'admin') {
+      if (!loggedInReader || loggedInReader.role !== 'admin' || !isAdminAuthenticated) {
+        setUserRole('reader');
+      }
+    }
+  }, [userRole, loggedInReader, isAdminAuthenticated]);
+
   const [readerCoins, setReaderCoins] = useState<number>(() => {
     const saved = localStorage.getItem('r2p_reader_coins');
     return saved ? Number(saved) : 50; // Give readers 50 coins initially to try out unlocking!
@@ -298,28 +318,38 @@ export default function App() {
     alert('পেমেন্ট সফলভাবে অনুমোদিত এবং পরিশোধিত হিসেবে চিহ্নিত করা হয়েছে!');
   };
 
-  const handleMonthlySettlement = (poolAmount: number) => {
+  const handleMonthlySettlement = async (poolAmount: number) => {
     const totalMonthlyCoins = writers.reduce((sum, w) => sum + (w.monthly_coins || 0), 0);
     if (totalMonthlyCoins <= 0) {
       alert('কোনো চলতি মাসের কয়েন নেই!');
       return;
     }
 
-    setWriters(prev => prev.map(w => {
-      const monthlyCoins = w.monthly_coins || 0;
-      const ratio = monthlyCoins / totalMonthlyCoins;
-      const shareBdt = ratio * poolAmount;
-      const newBalance = (w.balance_bdt || 0) + shareBdt;
+    try {
+      const res = await fetch('/api/admin/monthly-closing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ poolAmount, writers })
+      });
 
-      return {
-        ...w,
-        balance_bdt: Number(newBalance.toFixed(2)),
-        monthly_coins: 0, // Reset monthly coins
-        coinBalance: 0 // Reset current redeemable coin balance as it has been converted
-      };
-    }));
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'ক্লোজিং প্রসেস করতে ব্যাকএন্ডে সমস্যা হয়েছে।');
+      }
 
-    alert(`মাসিক ক্লোজিং ও রাজস্ব বন্টন সফল হয়েছে!\n\nমোট কয়েন: ${totalMonthlyCoins}\nবন্টনকৃত বাজেট: ৳${poolAmount}\n\nসব লেখকের চলতি মাসের কয়েন রিসেট করা হয়েছে এবং অর্জিত টাকা ওয়ালেটে যোগ হয়েছে।`);
+      const data = await res.json();
+      
+      // Update local writers state from backend updated writers!
+      if (data.updatedWriters) {
+        setWriters(data.updatedWriters);
+        localStorage.setItem('r2p_writers', JSON.stringify(data.updatedWriters));
+      }
+
+      alert(`মাসিক ক্লোজিং ও রাজস্ব বন্টন সফল হয়েছে এবং ব্যাকএন্ড আর্কাইভে রিপোর্ট সেভ করা হয়েছে!\n\nমোট কয়েন: ${totalMonthlyCoins}\nবন্টনকৃত বাজেট: ৳${poolAmount}\n\nসব লেখকের চলতি মাসের কয়েন রিসেট করা হয়েছে এবং অর্জিত টাকা ওয়ালেটে যোগ হয়েছে।`);
+    } catch (err: any) {
+      console.error(err);
+      alert('ত্রুটি: ' + err.message);
+    }
   };
 
   const handleAwardCoinsToWriter = (writerId: string, amount: number) => {

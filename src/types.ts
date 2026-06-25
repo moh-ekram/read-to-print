@@ -40,7 +40,7 @@ export interface ReaderUser {
   printCartCount: number; // number of products in print-ready queue/order or active cart
   bio?: string;
   savedArticlesCount?: number;
-  role?: 'reader' | 'writer';
+  role?: 'reader' | 'writer' | 'admin';
   lifetime_coins?: number;
   monthly_coins?: number;
   balance_bdt?: number;

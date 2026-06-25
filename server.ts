@@ -24,6 +24,7 @@ let fallbackUsers: any[] = [
     role: "admin"
   }
 ];
+let fallbackReports: any[] = [];
 
 // Robust live Postgres database existence check
 const hasPostgres = !!process.env.POSTGRES_URL && 
@@ -80,6 +81,18 @@ async function startServer() {
           coins INT DEFAULT 0,
           reads INT DEFAULT 0,
           word_count INT DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 2.5. Create closing_reports table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS closing_reports (
+          id SERIAL PRIMARY KEY,
+          report_month VARCHAR(50) NOT NULL,
+          total_coins INT NOT NULL,
+          pool_amount DECIMAL(10, 2) NOT NULL,
+          distribution_details TEXT NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
@@ -568,6 +581,181 @@ async function startServer() {
       }
     } catch (e: any) {
       console.error("[API Error] Inside /api/auth/login handler:", e.stack || e);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // 5. POST /api/admin/monthly-closing
+  app.post("/api/admin/monthly-closing", async (req, res) => {
+    try {
+      const { poolAmount, writers = [] } = req.body;
+      const parsedPoolAmount = Number(poolAmount) || 0;
+
+      if (parsedPoolAmount <= 0) {
+        return res.status(400).json({ error: "বাজেট বা পুল অ্যামাউন্ট অবশ্যই ০ এর চেয়ে বেশি হতে হবে।" });
+      }
+
+      const totalMonthlyCoins = writers.reduce((sum: number, w: any) => sum + (Number(w.monthly_coins) || 0), 0);
+      if (totalMonthlyCoins <= 0) {
+        return res.status(400).json({ error: "কোনো চলতি মাসের রয়্যালটি কয়েন নেই, তাই ক্লোজিং সম্ভব নয়।" });
+      }
+
+      // 1. Calculate ratios and distribute
+      const updatedWriters = writers.map((w: any) => {
+        const monthlyCoins = Number(w.monthly_coins) || 0;
+        const ratio = monthlyCoins / totalMonthlyCoins;
+        const shareBdt = ratio * parsedPoolAmount;
+        const currentBalanceBdt = Number(w.balance_bdt) || 0;
+        const newBalanceBdt = Number((currentBalanceBdt + shareBdt).toFixed(2));
+        
+        return {
+          ...w,
+          monthly_coins: 0,
+          coinBalance: 0,
+          balance_bdt: newBalanceBdt
+        };
+      });
+
+      // 2. Format Month Name (e.g. June 2026 / জুন ২০২৬)
+      const options: any = { month: 'long', year: 'numeric' };
+      const reportMonth = new Date().toLocaleString('bn-BD', options) || "জুন ২০২৬";
+
+      const distributionDetails = writers.map((w: any) => {
+        const monthlyCoins = Number(w.monthly_coins) || 0;
+        const ratio = monthlyCoins / totalMonthlyCoins;
+        const shareBdt = Number((ratio * parsedPoolAmount).toFixed(2));
+        return {
+          id: w.id,
+          name: w.name,
+          username: w.username,
+          coins: monthlyCoins,
+          shareBdt
+        };
+      });
+
+      const reportObject = {
+        reportMonth,
+        totalCoins: totalMonthlyCoins,
+        poolAmount: parsedPoolAmount,
+        distributionDetails: JSON.stringify(distributionDetails),
+        createdAt: new Date().toISOString()
+      };
+
+      if (hasPostgres) {
+        let client;
+        try {
+          client = await db.connect();
+          
+          // Save report to database
+          const reportRes = await client.query(`
+            INSERT INTO closing_reports (report_month, total_coins, pool_amount, distribution_details, created_at)
+            VALUES ($1, $2, $3, $4, NOW())
+            RETURNING *
+          `, [
+            reportObject.reportMonth,
+            reportObject.totalCoins,
+            reportObject.poolAmount,
+            reportObject.distributionDetails
+          ]);
+
+          // Update users in the database
+          for (const w of updatedWriters) {
+            await client.query(`
+              UPDATE users
+              SET balance_bdt = $1, monthly_coins = 0, coins = 0
+              WHERE username = $2
+            `, [w.balance_bdt, w.username]);
+          }
+
+          const savedReport = reportRes.rows[0];
+          return res.json({
+            success: true,
+            message: "মাসিক ক্লোজিং সফলভাবে ব্যাকএন্ডে সংরক্ষিত ও বন্টন সম্পন্ন হয়েছে!",
+            report: {
+              id: savedReport.id.toString(),
+              reportMonth: savedReport.report_month,
+              totalCoins: savedReport.total_coins,
+              poolAmount: Number(savedReport.pool_amount),
+              distributionDetails: JSON.parse(savedReport.distribution_details),
+              createdAt: savedReport.created_at
+            },
+            updatedWriters
+          });
+        } catch (dbErr: any) {
+          console.error("[Database Error] monthly closing transaction failed:", dbErr);
+          return res.status(500).json({ error: "ডাটাবেস ট্রানজেকশন ব্যর্থ হয়েছে।", details: dbErr.message });
+        } finally {
+          if (client) client.release();
+        }
+      } else {
+        // Fallback in-memory
+        const mockReport = {
+          id: "rep-" + Date.now(),
+          reportMonth: reportObject.reportMonth,
+          totalCoins: reportObject.totalCoins,
+          poolAmount: reportObject.poolAmount,
+          distributionDetails: distributionDetails,
+          createdAt: reportObject.createdAt
+        };
+        fallbackReports = [mockReport, ...fallbackReports];
+
+        // Update in-memory fallback users as well
+        for (const w of updatedWriters) {
+          const userIdx = fallbackUsers.findIndex(u => u.username === w.username);
+          if (userIdx !== -1) {
+            fallbackUsers[userIdx].balance_bdt = w.balance_bdt;
+            fallbackUsers[userIdx].monthly_coins = 0;
+            fallbackUsers[userIdx].coins = 0;
+          }
+        }
+
+        return res.json({
+          success: true,
+          message: "ইন-মেমোরি মাসিক ক্লোজিং সম্পন্ন হয়েছে!",
+          report: mockReport,
+          updatedWriters
+        });
+      }
+    } catch (e: any) {
+      console.error("[API Error] Inside /api/admin/monthly-closing:", e);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // 6. GET /api/admin/closing-reports
+  app.get("/api/admin/closing-reports", async (req, res) => {
+    try {
+      if (hasPostgres) {
+        let client;
+        try {
+          client = await db.connect();
+          const result = await client.query(`
+            SELECT id, report_month, total_coins, pool_amount, distribution_details, created_at
+            FROM closing_reports
+            ORDER BY created_at DESC
+          `);
+
+          const mapped = result.rows.map((row: any) => ({
+            id: row.id.toString(),
+            reportMonth: row.report_month,
+            totalCoins: row.total_coins,
+            poolAmount: Number(row.pool_amount),
+            distributionDetails: typeof row.distribution_details === 'string' ? JSON.parse(row.distribution_details) : row.distribution_details,
+            createdAt: row.created_at
+          }));
+
+          return res.json(mapped);
+        } catch (dbErr: any) {
+          console.error("[Database Error] GET /api/admin/closing-reports failed:", dbErr);
+          return res.status(500).json({ error: "ডাটাবেস থেকে রিপোর্ট লোড করতে ব্যর্থ হয়েছে।" });
+        } finally {
+          if (client) client.release();
+        }
+      } else {
+        return res.json(fallbackReports);
+      }
+    } catch (e: any) {
+      console.error("[API Error] Inside GET /api/admin/closing-reports:", e);
       return res.status(500).json({ error: "Internal server error" });
     }
   });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Article, Order, Writer, WriterApplication, ReaderUser, PayoutRequest } from '../types';
 import { 
   BarChart, Package, Users, AlertTriangle, Check, BookOpen, Clock, 
@@ -53,6 +53,25 @@ export default function AdminPanel({
   const [settlementPoolAmount, setSettlementPoolAmount] = useState<number>(() => {
     return writers.reduce((sum, w) => sum + (w.monthly_coins || 0), 0) || 5000;
   });
+
+  const [closingReports, setClosingReports] = useState<any[]>([]);
+  const [selectedReportDetail, setSelectedReportDetail] = useState<any | null>(null);
+
+  const fetchClosingReports = async () => {
+    try {
+      const res = await fetch('/api/admin/closing-reports');
+      if (res.ok) {
+        const data = await res.json();
+        setClosingReports(data);
+      }
+    } catch (err) {
+      console.error("Error fetching closing reports:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchClosingReports();
+  }, []);
 
   const MOCK_READERS = [
     { id: 'usr-1', name: 'মোঃ হাসিবুর রহমান', username: 'hasib_99', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', currentCoins: 120, spentAmount: 150, totalCoinsPurchased: 300, printCartCount: 2, bio: 'বই পড়তে ভালোবাসি, বিশেষ করে বিজ্ঞান ও প্রযুক্তি বিষয়ক কলাম।', savedArticlesCount: 5 },
@@ -517,7 +536,9 @@ export default function AdminPanel({
                           }
                           if (confirm(`আপনি কি নিশ্চিতভাবে মাসিক সেটেলমেন্ট সম্পন্ন করতে চান?\n\nমোট কয়েন: ${totalCoins}\nমোট বাজেট: ৳${settlementPoolAmount}\n\nএটি সম্পন্ন হলে প্রতিটি লেখকের কয়েন অনুযায়ী BDT টাকা বন্টন হবে এবং সবার চলতি মাসের কয়েন ব্যালেন্স রিসেট হয়ে যাবে!`)) {
                             if (onMonthlySettlement) {
-                              onMonthlySettlement(settlementPoolAmount);
+                              Promise.resolve(onMonthlySettlement(settlementPoolAmount)).then(() => {
+                                setTimeout(fetchClosingReports, 1000);
+                              });
                             }
                           }
                         }}
@@ -592,6 +613,136 @@ export default function AdminPanel({
                   </div>
                 </div>
 
+                {/* Monthly Closing Reports Archive */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-3xs space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                    <FileText className="w-5 h-5 text-indigo-650" />
+                    <h4 className="font-extrabold text-slate-800 text-sm">মাসিক সেটেলমেন্ট ও ক্লোজিং রিপোর্ট আর্কাইভ (Archives)</h4>
+                  </div>
+
+                  {closingReports.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400 italic text-xs">
+                      এখনো কোনো সেটেলমেন্ট রিপোর্ট আর্কাইভে সংরক্ষিত নেই।
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {closingReports.map((report) => (
+                        <div 
+                          key={report.id} 
+                          className="p-3 bg-slate-50 hover:bg-indigo-50/10 rounded-xl border border-slate-150 transition-all flex flex-col justify-between space-y-3"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-extrabold text-slate-800 text-xs">{report.reportMonth}</span>
+                              <span className="text-[9px] bg-indigo-50 text-indigo-600 font-bold px-1.5 py-0.5 rounded-xs">
+                                সংরক্ষিত
+                              </span>
+                            </div>
+                            <div className="mt-2 space-y-1 text-[10px] text-slate-500">
+                              <p className="flex justify-between">
+                                <span>মোট কয়েন স্ন্যাপশট:</span>
+                                <span className="font-mono font-bold text-slate-700">🪙 {report.totalCoins}</span>
+                              </p>
+                              <p className="flex justify-between">
+                                <span>বন্টনকৃত বাজেট পুুল:</span>
+                                <span className="font-mono font-bold text-emerald-600">৳{report.poolAmount}</span>
+                              </p>
+                              <p className="text-[9px] text-slate-400 font-mono mt-1 text-right">
+                                {new Date(report.createdAt).toLocaleString('bn-BD', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReportDetail(report)}
+                            className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-indigo-600 font-extrabold text-[10px] rounded-lg transition-all"
+                          >
+                            বিস্তারিত বন্টন দেখুন
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal for report details */}
+                {selectedReportDetail && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
+                      <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <div>
+                          <h4 className="font-extrabold text-slate-800 text-sm">বিস্তারিত সেটেলমেন্ট রিপোর্ট</h4>
+                          <p className="text-[10px] text-indigo-600 font-bold mt-0.5">{selectedReportDetail.reportMonth}</p>
+                        </div>
+                        <button 
+                          onClick={() => setSelectedReportDetail(null)}
+                          className="p-1 rounded-full hover:bg-slate-200 text-slate-500 transition-colors"
+                        >
+                          <XCircle className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <div className="p-4 overflow-y-auto space-y-4">
+                        <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                          <div className="p-2 bg-indigo-50/40 rounded-lg border border-indigo-100">
+                            <span className="text-[9px] text-slate-455 font-bold uppercase block">মোট স্ন্যাপশট কয়েন</span>
+                            <span className="text-sm font-black text-indigo-600 font-mono mt-0.5 block">🪙 {selectedReportDetail.totalCoins}</span>
+                          </div>
+                          <div className="p-2 bg-emerald-50/40 rounded-lg border border-emerald-100">
+                            <span className="text-[9px] text-slate-455 font-bold uppercase block">মোট বন্টনকৃত পুুল</span>
+                            <span className="text-sm font-black text-emerald-600 font-mono mt-0.5 block">৳{selectedReportDetail.poolAmount}</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider block mb-2">লেখক ভিত্তিক রাজস্ব বন্টন</span>
+                          <div className="space-y-1.5 max-h-[250px] overflow-y-auto pr-1">
+                            {(() => {
+                              const details = typeof selectedReportDetail.distributionDetails === 'string'
+                                ? JSON.parse(selectedReportDetail.distributionDetails)
+                                : selectedReportDetail.distributionDetails;
+                              
+                              if (!Array.isArray(details) || details.length === 0) {
+                                return <p className="text-[10px] italic text-slate-400">কোনো বন্টন তথ্য পাওয়া যায়নি।</p>;
+                              }
+
+                              return details.map((item: any) => (
+                                <div key={item.id} className="p-2 bg-slate-50 rounded-lg border border-slate-150 flex justify-between items-center text-[11px]">
+                                  <div className="space-y-0.5">
+                                    <span className="font-extrabold text-slate-800">{item.name}</span>
+                                    <span className="text-[9px] text-slate-455 block">@{item.username}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="font-mono text-slate-600 block">🪙 {item.coins} কয়েন</span>
+                                    <span className="font-mono font-black text-emerald-600 block text-xs">৳{item.shareBdt}</span>
+                                  </div>
+                                </div>
+                              ));
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReportDetail(null)}
+                          className="px-4 py-1.5 bg-indigo-650 hover:bg-indigo-750 text-white text-xs font-bold rounded-lg transition-all"
+                        >
+                          বন্ধ করুন
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Writers Spreadsheet-like Table */}
                 <div className="overflow-x-auto bg-white border border-slate-200 rounded-xl shadow-4xs">
                   <table id="admin-writers-table" className="min-w-full divide-y divide-slate-100 text-left text-xs font-sans">
@@ -612,7 +763,11 @@ export default function AdminPanel({
                       {(() => {
                         const writersWithStats = writers.map((w) => {
                           const totalPubs = articles.filter(a => a.writerId === w.id).length;
-                          const coins = w.lifetime_coins !== undefined ? w.lifetime_coins : (w.coinBalance || 0);
+                          // Sum up all coins of each writer's articles to calculate lifetime_coins dynamically
+                          const articleCoins = articles
+                            .filter(a => a.writerId === w.id)
+                            .reduce((sum, a) => sum + (Number((a as any).coins) || Number(a.requiredCoins) || 0), 0);
+                          const coins = articleCoins;
                           const monthlyCoins = w.monthly_coins !== undefined ? w.monthly_coins : (w.coinBalance || 0);
                           const balanceBdt = w.balance_bdt || 0;
                           const followers = w.followers || 0;
@@ -653,7 +808,18 @@ export default function AdminPanel({
                             <td className="px-4 py-2 font-extrabold text-slate-800 border-r border-slate-100">
                               <div className="flex items-center gap-2">
                                 <img src={w.avatar} alt="" className="w-5.5 h-5.5 rounded-full object-cover border border-slate-100" />
-                                <span>{w.name}</span>
+                                <div className="flex flex-col">
+                                  <span>{w.name}</span>
+                                  <span className={`inline-block w-fit px-1.5 py-0.5 text-[8px] font-black uppercase rounded-sm border mt-0.5 ${
+                                    w.coins >= 150 
+                                      ? 'bg-amber-100 text-amber-800 border-amber-300' 
+                                      : w.coins >= 50 
+                                        ? 'bg-slate-100 text-slate-700 border-slate-300' 
+                                        : 'bg-orange-50 text-orange-700 border-orange-200'
+                                  }`}>
+                                    {w.coins >= 150 ? '🥇 গোল্ড লেখক' : w.coins >= 50 ? '🥈 সিলভার লেখক' : '🥉 ব্রোঞ্জ লেখক'}
+                                  </span>
+                                </div>
                               </div>
                             </td>
                             <td className="px-4 py-2 font-mono text-slate-600 border-r border-slate-100">
