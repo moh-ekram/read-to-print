@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import WriterPanel from './WriterPanel';
+import { TopAuthorsChart } from './TopAuthorsChart';
 
 const NEWSPAPER_ARTICLES = [
   {
@@ -93,6 +94,19 @@ interface ReaderPanelProps {
   onSubmitPayoutRequest?: (amount: number, method: 'bkash' | 'nagad' | 'rocket', account: string) => void;
 }
 
+interface WriterWithScore extends Writer {
+  score: number;
+  lifetimeCoins: number;
+  totalReads: number;
+  printBasketCount: number;
+  trueRank: number;
+}
+
+export const toBengaliNumber = (num: number | string): string => {
+  const bdigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return num.toString().replace(/\d/g, (digit) => bdigits[parseInt(digit)]);
+};
+
 export default function ReaderPanel({
   articles,
   writers,
@@ -124,6 +138,7 @@ export default function ReaderPanel({
   onSubmitPayoutRequest
 }: ReaderPanelProps) {
   const [activeTab, setActiveTab] = useState<'discover' | 'my-profile' | 'shelf' | 'print-cart' | 'coin-store' | 'author-profiles' | 'become-writer'>('discover');
+  const [authorsSubTab, setAuthorsSubTab] = useState<'list' | 'chart'>('list');
   const [selectedAuthorForProfile, setSelectedAuthorForProfile] = useState<Writer | null>(null);
   const [viewingArticle, setViewingArticle] = useState<Article | null>(null);
   const [readingScrollProgress, setReadingScrollProgress] = useState(0);
@@ -224,7 +239,7 @@ export default function ReaderPanel({
 
   // Profile inner subtabs and shuffled writers states
   const [profileActiveTab, setProfileActiveTab] = useState<'shelf' | 'writer'>('shelf');
-  const [shuffledWriters, setShuffledWriters] = useState<Writer[]>([]);
+  const [shuffledWriters, setShuffledWriters] = useState<WriterWithScore[]>([]);
 
   // Homepage coin filtering states
   const [coinFilterType, setCoinFilterType] = useState<'all' | 'free' | '10' | '30' | 'custom'>('all');
@@ -232,14 +247,73 @@ export default function ReaderPanel({
 
   useEffect(() => {
     if (writers && writers.length > 0) {
-      const arr = [...writers];
-      for (let i = arr.length - 1; i > 0; i--) {
+      // 1. Calculate ratings for all writers
+      const calculated: WriterWithScore[] = writers.map(writer => {
+        const lifetimeCoins = writer.lifetime_coins || writer.coinBalance || 0;
+        
+        // Total reads of published articles
+        const writerArticles = articles.filter(a => a.writerId === writer.id && a.status === 'published');
+        const totalReads = writerArticles.reduce((sum, art) => sum + (art.reads || 0), 0);
+        
+        // Print basket count: current cart + completed orders
+        const cartCount = cart.filter(item => item.writerName === writer.name).length;
+        
+        let orderCount = 0;
+        try {
+          const localOrders = JSON.parse(localStorage.getItem('r2p_orders') || '[]');
+          if (Array.isArray(localOrders)) {
+            localOrders.forEach((o: any) => {
+              if (o && Array.isArray(o.cartItems)) {
+                o.cartItems.forEach((item: any) => {
+                  if (item && item.writerName === writer.name) {
+                    orderCount++;
+                  }
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.error("Failed to parse local orders in rating algorithm", e);
+        }
+        
+        // Baseline based on followers to have non-zero realistic print counts
+        const baselinePrintCount = Math.floor((writer.followers || 0) * 0.05);
+        const printBasketCount = cartCount + orderCount + baselinePrintCount;
+        
+        // Score = (lifetime_coins * 0.4) + (totalReads * 0.3) + (printBasketCount * 0.3)
+        const score = (lifetimeCoins * 0.4) + (totalReads * 0.3) + (printBasketCount * 0.3);
+        
+        return {
+          ...writer,
+          score: Number(score.toFixed(1)),
+          lifetimeCoins,
+          totalReads,
+          printBasketCount,
+          trueRank: 0
+        };
+      });
+
+      // 2. Sort by score descending to find true ranks
+      calculated.sort((a, b) => b.score - a.score);
+      calculated.forEach((w, idx) => {
+        w.trueRank = idx + 1;
+      });
+
+      // 3. Keep Top 10 intact (index 0 to 9)
+      const top10 = calculated.slice(0, 10);
+      const remaining = calculated.slice(10);
+
+      // 4. Shuffle the remaining list (ranks 11 and above)
+      const shuffledRemaining = [...remaining];
+      for (let i = shuffledRemaining.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+        [shuffledRemaining[i], shuffledRemaining[j]] = [shuffledRemaining[j], shuffledRemaining[i]];
       }
-      setShuffledWriters(arr);
+
+      // 5. Set shuffled writers as combined top10 + shuffled remaining
+      setShuffledWriters([...top10, ...shuffledRemaining]);
     }
-  }, [writers]);
+  }, [writers, articles, cart]);
 
   const lastTrackedReadArticleId = React.useRef<string | null>(null);
 
@@ -377,6 +451,7 @@ export default function ReaderPanel({
     const matchesSearch = 
       art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       art.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      art.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
       art.subCategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
       art.writerName.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -554,7 +629,7 @@ export default function ReaderPanel({
         </button>
 
         <button
-          onClick={() => { setActiveTab('author-profiles'); setSelectedAuthorForProfile(null); }}
+          onClick={() => { setActiveTab('author-profiles'); setSelectedAuthorForProfile(null); setAuthorsSubTab('list'); }}
           title="লেখক প্রোফাইলসমূহ"
           className={`relative p-2 md:py-1.5 md:px-3 text-xs transition-all rounded-xl flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'author-profiles' 
@@ -649,7 +724,7 @@ export default function ReaderPanel({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="শিরোনাম, লেখক বা সাব-ক্যাটেগরি দিয়ে খুঁজুন..."
+                    placeholder="শিরোনাম, লেখক বা ক্যাটেগরি (যেমন সাহিত্য, বিজ্ঞান) দিয়ে খুঁজুন..."
                     className="w-full pl-9 pr-4 py-2 text-xs border border-neutral-300 rounded-md focus:outline-hidden focus:border-neutral-900 bg-white"
                   />
                 </div>
@@ -670,7 +745,7 @@ export default function ReaderPanel({
 
               {/* 1. Thin Category Capsule Row */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                {['সব', 'সাহিত্য', 'বিজ্ঞান', 'রাজনীতি', 'অর্থনীতি', 'ধর্ম', 'দর্শন'].map((cat) => (
+                {['সব', 'সাহিত্য', 'বিজ্ঞান', 'অর্থনীতি', 'ধর্ম', 'দর্শন'].map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
@@ -740,76 +815,7 @@ export default function ReaderPanel({
                 </div>
               </div>
 
-              {/* 2. Top-rated & Randomized Writers Horizontal Row */}
-              <div className="bg-gradient-to-r from-indigo-50/40 via-purple-50/20 to-amber-50/20 p-4 rounded-2xl border border-indigo-200/40 space-y-3 shadow-4xs">
-                <div className="flex justify-between items-center px-1">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                    <h3 className="text-xs font-black text-slate-800 tracking-tight flex items-center gap-1">
-                      ⭐ গুণী লেখক ও জনপ্রিয় কলামিস্ট বৃন্দ
-                    </h3>
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      setSelectedAuthorForProfile(null);
-                      setActiveTab('author-profiles');
-                    }}
-                    className="text-[10px] md:text-xs font-extrabold text-indigo-600 hover:text-indigo-805 transition-colors"
-                  >
-                    সকল লেখক অপশন →
-                  </button>
-                </div>
 
-                <div className="flex items-center gap-3 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
-                  {(() => {
-                    const sortedWriters = [...writers].sort((a, b) => (b.coinBalance || 0) - (a.coinBalance || 0));
-                    const top5 = sortedWriters.slice(0, 5);
-                    const remaining = sortedWriters.slice(5);
-                    const combined = [
-                      ...top5.map((w, idx) => ({ ...w, rank: idx + 1, isTop5: true })), 
-                      ...remaining.map(w => ({ ...w, rank: null, isTop5: false }))
-                    ];
-
-                    return combined.map((writer) => {
-                      return (
-                        <div
-                          key={writer.id}
-                          onClick={() => {
-                            setSelectedAuthorForProfile(writer);
-                            setActiveTab('author-profiles');
-                          }}
-                          className={`flex items-center gap-2 bg-white border p-2 rounded-xl shrink-0 cursor-pointer hover:shadow-2xs transition-all hover:-translate-y-0.5 group/auth-pill ${
-                            writer.isTop5 ? 'border-amber-200 ring-2 ring-amber-500/10' : 'border-slate-200'
-                          }`}
-                        >
-                          <div className="relative">
-                            <img
-                              src={writer.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"}
-                              alt={writer.name}
-                              className="w-8.5 h-8.5 rounded-full object-cover border border-slate-100"
-                            />
-                            {writer.isTop5 && (
-                              <span className="absolute -top-1.5 -right-1 bg-amber-500 text-[8px] text-white font-black px-1 rounded-full shadow-xs border border-white flex items-center justify-center">
-                                👑 {writer.rank}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="text-left shrink-0">
-                            <h4 className="text-[11px] font-black text-slate-800 group-hover/auth-pill:text-indigo-655 transition-colors">
-                              {writer.name}
-                            </h4>
-                            <p className="text-[9px] text-indigo-600 font-bold flex items-center gap-0.5 mt-0.5">
-                              👥 {writer.followers} অনুসারী
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
             </div>
 
             {/* Articles List (প্রবন্ধসমূহের তালিকা) */}
@@ -2136,92 +2142,165 @@ export default function ReaderPanel({
               </div>
             ) : (
               // Authors directory list
-              <div className="space-y-4">
-                <div className="bg-gradient-to-r from-indigo-50 to-indigo-100/30 p-5 rounded-2xl border border-indigo-200/40">
-                  <h3 className="font-extrabold text-gray-900 text-sm md:text-base">নিবন্ধিত প্রথিতযশা কলামিস্ট ও লেখকবৃন্দ</h3>
-                  <p className="text-xs text-gray-500 leading-normal">
-                    সৃজনশীল লেখকদের যেকোনো প্রোফাইল ঘেটে ঘুরে দেখুন, তাদের বায়োগ্রাফি পড়ুন এবং তাদের তৈরিকৃত সেরা জ্ঞানগর্ভ রচনাবলি অন্বেষণ করুন।
-                  </p>
+              <div className="space-y-6">
+                {/* Sub-tab Navigation */}
+                <div className="flex border-b border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setAuthorsSubTab('list')}
+                    className={`px-5 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                      authorsSubTab === 'list'
+                        ? 'border-indigo-600 text-indigo-600 font-extrabold'
+                        : 'border-transparent text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    ✍️ লেখক তালিকা
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAuthorsSubTab('chart')}
+                    className={`px-5 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                      authorsSubTab === 'chart'
+                        ? 'border-indigo-600 text-indigo-600 font-extrabold'
+                        : 'border-transparent text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    📊 সেরা লেখকদের চার্ট (D3)
+                  </button>
                 </div>
 
-                <div className="bg-white border border-slate-205 rounded-2xl overflow-hidden shadow-2xs">
-                  <div className="overflow-x-auto">
-                    <table id="authors-table" className="min-w-full divide-y divide-slate-100 text-left">
-                      <thead className="bg-slate-50/75">
-                        <tr className="divide-x divide-slate-100">
-                          <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">🏆 রেটিং (Rating)</th>
-                          <th scope="col" className="px-6 py-3.5 text-xs font-bold text-gray-750 uppercase tracking-wider">✍️ লেখকের নাম ও প্রোফাইল</th>
-                          <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">📝 প্রকাশনা</th>
-                          <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">👥 ফলোয়ার</th>
-                          <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">✨ অ্যাকশন</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        {(shuffledWriters.length > 0 ? shuffledWriters : writers).map((writer, index) => {
-                          const writerPosts = articles.filter(a => a.writerId === writer.id && a.status === 'published');
-                          const rating = index < 10 ? (4.95 - (index * 0.05)).toFixed(1) : null;
-                          
-                          return (
-                            <tr key={writer.id} className="hover:bg-slate-50/40 transition-colors">
-                              {/* রেটিং (Rating) */}
-                              <td className="whitespace-nowrap px-4 py-4 text-center">
-                                {rating ? (
-                                  <div className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full text-amber-705 text-xs font-extrabold font-mono">
-                                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                                    <span>{rating}</span>
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-300 font-bold font-sans">—</span>
-                                )}
-                              </td>
-                              {/* লেখক (Name) */}
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-3">
-                                  <img
-                                    src={writer.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"}
-                                    alt={writer.name}
-                                    onClick={() => setSelectedAuthorForProfile(writer)}
-                                    className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
-                                  />
-                                  <div className="text-left">
-                                    <div 
-                                      onClick={() => setSelectedAuthorForProfile(writer)}
-                                      className="font-extrabold text-gray-900 text-xs md:text-sm hover:text-indigo-650 hover:underline cursor-pointer progression-underline transition-colors"
-                                    >
-                                      {writer.name}
-                                    </div>
-                                    <div className="text-[10px] text-gray-450 font-mono">@{writer.username}</div>
-                                    {writer.bio && (
-                                      <div className="text-[11px] text-gray-500 line-clamp-1 mt-0.5 max-w-xs">{writer.bio}</div>
-                                    )}
-                                  </div>
-                                </div>
-                              </td>
-                              {/* প্রকাশনা (Publications) */}
-                              <td className="whitespace-nowrap px-4 py-4 text-center font-mono text-xs md:text-sm font-bold text-gray-700">
-                                {writerPosts.length} টি
-                              </td>
-                              {/* ফলোয়ার (Followers) */}
-                              <td className="whitespace-nowrap px-4 py-4 text-center font-mono text-xs md:text-sm font-bold text-indigo-650">
-                                {writer.followers || 0} জন
-                              </td>
-                              {/* বিস্তারিত (Action) */}
-                              <td className="whitespace-nowrap px-4 py-4 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedAuthorForProfile(writer)}
-                                  className="px-3.5 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-4xs hover:shadow-3xs transition-all"
-                                >
-                                  প্রোফাইল দেখুন
-                                </button>
-                              </td>
+                {authorsSubTab === 'chart' ? (
+                  <TopAuthorsChart writers={writers} articles={articles} />
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-r from-indigo-50 to-indigo-100/30 p-5 rounded-2xl border border-indigo-200/40">
+                      <h3 className="font-extrabold text-gray-900 text-sm md:text-base">নিবন্ধিত প্রথিতযশা কলামিস্ট ও লেখকবৃন্দ</h3>
+                      <p className="text-xs text-gray-500 leading-normal">
+                        সৃজনশীল লেখকদের যেকোনো প্রোফাইল ঘেটে ঘুরে দেখুন, তাদের বায়োগ্রাফি পড়ুন এবং তাদের তৈরিকৃত সেরা জ্ঞানগর্ভ রচনাবলি অন্বেষণ করুন।
+                      </p>
+                    </div>
+
+                    <div className="bg-white border border-slate-205 rounded-2xl overflow-hidden shadow-2xs">
+                      <div className="overflow-x-auto">
+                        <table id="authors-table" className="min-w-full divide-y divide-slate-100 text-left">
+                          <thead className="bg-slate-50/75">
+                            <tr className="divide-x divide-slate-100">
+                              <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider w-24">🏅 সিরিয়াল (Rank)</th>
+                              <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider w-36">⭐ রেটিং (Score)</th>
+                              <th scope="col" className="px-6 py-3.5 text-xs font-bold text-gray-750 uppercase tracking-wider">✍️ লেখকের নাম ও প্রোফাইল</th>
+                              <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">📝 প্রকাশনা</th>
+                              <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">👥 ফলোয়ার</th>
+                              <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-750 text-center uppercase tracking-wider">✨ অ্যাকশন</th>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 bg-white">
+                            {(shuffledWriters.length > 0 ? shuffledWriters : writers).map((writer, index) => {
+                              const writerPosts = articles.filter(a => a.writerId === writer.id && a.status === 'published');
+                              
+                              // Handle score calculations safely
+                              const scoreVal = (writer as any).score || 0;
+                              const lifetimeCoinsVal = (writer as any).lifetimeCoins || writer.lifetime_coins || writer.coinBalance || 0;
+                              const totalReadsVal = (writer as any).totalReads || 0;
+                              const printBasketCountVal = (writer as any).printBasketCount || 0;
+                              const rankVal = (writer as any).trueRank || (index + 1);
+
+                              // 1. Serial Badge column decoration
+                              let serialBadge = null;
+                              if (index < 10) {
+                                if (index === 0) {
+                                  serialBadge = <span className="inline-flex items-center justify-center bg-amber-100 text-amber-800 border border-amber-300 w-8 h-8 rounded-full text-xs font-black shadow-3xs">🥇 {toBengaliNumber(index + 1)}</span>;
+                                } else if (index === 1) {
+                                  serialBadge = <span className="inline-flex items-center justify-center bg-slate-150 text-slate-800 border border-slate-300 w-8 h-8 rounded-full text-xs font-black shadow-3xs">🥈 {toBengaliNumber(index + 1)}</span>;
+                                } else if (index === 2) {
+                                  serialBadge = <span className="inline-flex items-center justify-center bg-orange-100 text-orange-800 border border-orange-300 w-8 h-8 rounded-full text-xs font-black shadow-3xs">🥉 {toBengaliNumber(index + 1)}</span>;
+                                } else {
+                                  serialBadge = <span className="inline-flex items-center justify-center bg-indigo-50 text-indigo-700 border border-indigo-200/60 w-7 h-7 rounded-full text-xs font-bold">{toBengaliNumber(index + 1)}</span>;
+                                }
+                              } else {
+                                // Shuffled rank outside top 10
+                                serialBadge = <span className="inline-flex items-center justify-center bg-slate-50 text-slate-500 border border-slate-200/50 px-2 py-0.5 rounded-full text-xs font-mono">#{toBengaliNumber(rankVal)}</span>;
+                              }
+
+                              return (
+                                <tr key={writer.id} className="hover:bg-slate-50/40 transition-colors">
+                                  {/* সিরিয়াল (Serial) */}
+                                  <td className="whitespace-nowrap px-4 py-4 text-center">
+                                    {serialBadge}
+                                  </td>
+                                  
+                                  {/* রেটিং (Rating/Score) */}
+                                  <td className="whitespace-nowrap px-4 py-4 text-center">
+                                    <div className="flex flex-col items-center justify-center gap-0.5 group/score relative">
+                                      <div className="inline-flex items-center gap-1 bg-amber-50/80 border border-amber-200 px-2.5 py-1 rounded-full text-amber-705 text-xs font-black font-sans cursor-help">
+                                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                                        <span>{toBengaliNumber(scoreVal.toFixed(1))}</span>
+                                      </div>
+                                      <span className="text-[10px] text-gray-400 font-medium tracking-tight whitespace-nowrap mt-0.5 font-mono">
+                                        🪙{toBengaliNumber(lifetimeCoinsVal)} | 📖{toBengaliNumber(totalReadsVal)} | 📦{toBengaliNumber(printBasketCountVal)}
+                                      </span>
+                                      {/* Dynamic tooltip on hover to explain calculation details */}
+                                      <div className="absolute bottom-full mb-1.5 hidden group-hover/score:flex flex-col bg-slate-900 text-white text-[10px] p-2.5 rounded-lg shadow-lg z-50 w-56 text-left leading-relaxed">
+                                        <p className="font-bold border-b border-slate-700 pb-1 mb-1 text-amber-400">📊 রেটিং স্কোর ফর্মুলা:</p>
+                                        <p className="text-slate-300 font-mono text-[9px] mb-1 leading-normal">
+                                          ({toBengaliNumber(lifetimeCoinsVal)} × ০.৪) + ({toBengaliNumber(totalReadsVal)} × ০.৩) + ({toBengaliNumber(printBasketCountVal)} × ০.৩)
+                                        </p>
+                                        <p className="text-slate-400 text-[8px] mt-0.5">
+                                          * লাইফটাইম কয়েন (৪০%) + মোট রিডার্স কাউন্ট (৩০%) + প্রিন্ট বাস্কেটে যুক্ত হওয়া (৩০%)
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* লেখক (Name) */}
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center gap-3">
+                                      <img
+                                        src={writer.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"}
+                                        alt={writer.name}
+                                        onClick={() => setSelectedAuthorForProfile(writer)}
+                                        className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
+                                      />
+                                      <div className="text-left">
+                                        <div 
+                                          onClick={() => setSelectedAuthorForProfile(writer)}
+                                          className="font-extrabold text-gray-900 text-xs md:text-sm hover:text-indigo-650 hover:underline cursor-pointer progression-underline transition-colors"
+                                        >
+                                          {writer.name}
+                                        </div>
+                                        <div className="text-[10px] text-gray-450 font-mono">@{writer.username}</div>
+                                        {writer.bio && (
+                                          <div className="text-[11px] text-gray-500 line-clamp-1 mt-0.5 max-w-xs">{writer.bio}</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  {/* প্রকাশনা (Publications) */}
+                                  <td className="whitespace-nowrap px-4 py-4 text-center font-mono text-xs md:text-sm font-bold text-gray-700">
+                                    {toBengaliNumber(writerPosts.length)} টি
+                                  </td>
+                                  {/* ফলোয়ার (Followers) */}
+                                  <td className="whitespace-nowrap px-4 py-4 text-center font-mono text-xs md:text-sm font-bold text-indigo-650">
+                                    {toBengaliNumber(writer.followers || 0)} জন
+                                  </td>
+                                  {/* বিস্তারিত (Action) */}
+                                  <td className="whitespace-nowrap px-4 py-4 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedAuthorForProfile(writer)}
+                                      className="px-3.5 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-4xs hover:shadow-3xs transition-all"
+                                    >
+                                      প্রোফাইল দেখুন
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                          </table>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </motion.div>
