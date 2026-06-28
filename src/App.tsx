@@ -628,50 +628,93 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf9f6] text-neutral-900 flex flex-col font-sans selection:bg-neutral-200 selection:text-neutral-900">
+    <div className="min-h-screen bg-[#f4f8f4] text-neutral-900 flex flex-col font-sans selection:bg-emerald-200 selection:text-emerald-950 relative overflow-x-hidden">
       
+      {/* Soft Ambient animated background blobs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <motion.div 
+          animate={{
+            x: [0, 40, -20, 0],
+            y: [0, -50, 40, 0],
+            scale: [1, 1.1, 0.9, 1],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-emerald-100/35 rounded-full blur-[130px]" 
+        />
+        <motion.div 
+          animate={{
+            x: [0, -50, 30, 0],
+            y: [0, 30, -50, 0],
+            scale: [1, 0.9, 1.1, 1],
+          }}
+          transition={{
+            duration: 24,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-1/3 -right-40 w-[550px] h-[550px] bg-[#faf6ee]/60 rounded-full blur-[110px]" 
+        />
+        <motion.div 
+          animate={{
+            x: [0, 30, -30, 0],
+            y: [0, 20, 20, 0],
+            scale: [1, 1.05, 0.95, 1],
+          }}
+          transition={{
+            duration: 16,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute -bottom-20 left-1/3 w-[500px] h-[500px] bg-emerald-50/50 rounded-full blur-[120px]" 
+        />
+      </div>
+
       {/* Editorial Broadsheet Masthead */}
-      <header className="sticky top-0 z-40 bg-[#faf9f6]/95 backdrop-blur-sm shadow-xs" id="app-header">
+      <header className="sticky top-0 z-45 bg-[#f4f8f4]/95 backdrop-blur-md border-b border-emerald-100/60 shadow-2xs relative z-10" id="app-header">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 flex justify-between items-center">
           
           {/* Logo & Sub-header */}
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-neutral-100 flex items-center justify-center text-neutral-950 font-digits text-xs font-black">
+            <div className="w-8 h-8 bg-emerald-800 text-[#f4f8f4] flex items-center justify-center font-digits text-sm font-black rounded-lg shadow-sm">
               R
             </div>
             <div>
-              <h1 className="text-lg font-black tracking-tighter text-neutral-950 font-serif">read2print</h1>
-              <span className="text-[9px] text-neutral-450 font-medium block leading-none uppercase tracking-widest mt-0.5">মুদ্রণ ও সাহিত্য সংকলন</span>
+              <h1 className="text-lg font-black tracking-tighter text-emerald-950 font-serif">read2print</h1>
+              <span className="text-[9px] text-emerald-800 font-bold block leading-none uppercase tracking-widest mt-0.5">মুদ্রণ ও সাহিত্য সংকলন</span>
             </div>
           </div>
 
-          {/* Minimalist Switcher - No pipe symbols, clean space */}
-          <div className="flex items-center gap-4 text-xs text-neutral-500">
+          {/* Minimalist Switcher - Styled with soft matching colors and dynamic hover */}
+          <div className="flex items-center gap-2.5 text-xs text-emerald-800/80">
             <button
               onClick={() => setUserRole('reader')}
-              className={`py-1 px-1.5 transition-all ${
+              className={`py-1.5 px-3 rounded-full transition-all duration-300 font-sans font-bold flex items-center gap-1 ${
                 userRole === 'reader'
-                  ? 'text-neutral-950 font-bold bg-[#f1efe9] rounded-sm'
-                  : 'hover:text-neutral-950'
+                  ? 'text-emerald-950 bg-emerald-100/80 shadow-2xs border border-emerald-200/50'
+                  : 'hover:text-emerald-950 hover:bg-emerald-50/50'
               }`}
             >
-              পাঠক প্রকাশনা
+              पाठক প্রকাশনা
             </button>
             <button
               onClick={handleAdminTabClick}
-              className={`py-1 px-1.5 transition-all flex items-center gap-1 ${
+              className={`py-1.5 px-3 rounded-full transition-all duration-300 font-sans font-bold flex items-center gap-1 ${
                 userRole === 'admin'
-                  ? 'text-neutral-950 font-bold bg-[#f1efe9] rounded-sm'
-                  : 'hover:text-neutral-950'
+                  ? 'text-white bg-emerald-850 shadow-2xs border border-emerald-900'
+                  : 'hover:text-emerald-950 hover:bg-emerald-50/50'
               }`}
             >
-              নিয়ন্ত্রণ মোড
+              نিয়ন্ত্রণ মোড
             </button>
             
             {isAdminAuthenticated && (
               <button
                 onClick={handleAdminLogout}
-                className="p-1 text-neutral-400 hover:text-red-650 transition-colors"
+                className="p-1.5 text-emerald-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
                 title="লগআউট"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -682,16 +725,20 @@ export default function App() {
         </div>
       </header>
 
-      {/* Razor-thin Broadside Metadata Bar with subtle background shade instead of crisp border lines */}
-      <div className="bg-[#f3f1eb] text-[10px] text-neutral-500 tracking-wide font-sans">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-1.5 flex justify-between items-center leading-none">
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-            <span>সেন্ট্রাল ডাটাগ্রিড লাইভ</span>
+      {/* Razor-thin Broadside Metadata Bar with glowing indicator and soft green gradient */}
+      <div className="bg-gradient-to-r from-emerald-50/60 via-emerald-100/30 to-emerald-50/60 border-b border-emerald-100/40 text-[10px] text-emerald-800 tracking-wide font-sans relative z-10">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-2 flex justify-between items-center leading-none">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="font-extrabold tracking-tight">সেন্ট্রাল ডাটাগ্রিড লাইভ</span>
           </div>
           
           <div className="flex gap-4 items-center">
-            <span>ভূমিকা {userRole === 'reader' ? 'সংকলন পাঠক' : 'মডারেটর'}</span>
+            <span>ভূমিকা: <span className="font-extrabold text-emerald-900">{userRole === 'reader' ? 'সংকলন পাঠক' : 'মডারেটর'}</span></span>
+            <span className="text-emerald-200">/</span>
             <span>মুদ্রণ রেডি পিডিএফ ডিস্ট্রিবিউশন</span>
           </div>
         </div>
@@ -764,10 +811,10 @@ export default function App() {
       </main>
 
       {/* Footer bar */}
-      <footer className="bg-white border-t border-gray-100 py-6 text-center text-xs text-gray-400">
+      <footer className="bg-[#ecf3ec] border-t border-emerald-100/50 py-6 text-center text-xs text-emerald-800 relative z-10">
         <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-2">
-          <p className="font-bold text-gray-500">© 2026 read2print. অল রাইটস সংরক্ষিত।</p>
-          <p className="max-w-xl mx-auto leading-relaxed scale-95 opacity-85">
+          <p className="font-extrabold text-emerald-950">© 2026 read2print. অল রাইটস সংরক্ষিত।</p>
+          <p className="max-w-xl mx-auto leading-relaxed scale-95 opacity-85 text-emerald-700">
             একটি সৃজনশীল প্ল্যাটফর্ম যেখানে লেখকেরা পান সাহিত্য প্রকাশের মুক্ত আকাশ এবং পাঠকেরা তাদের কাস্টম সিলেকশনকে সাজিয়ে পান সরাসরি সুদৃশ্য বাইন্ডিংযুক্ত বইয়ের চিরন্তন ছোঁয়া।
           </p>
         </div>
@@ -776,21 +823,21 @@ export default function App() {
       {/* Admin Passcode Authentication Modal Overlay */}
       <AnimatePresence>
         {showAdminLoginModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-emerald-950/40 backdrop-blur-xs p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="bg-white rounded-2xl shadow-xl border border-slate-200/80 max-w-sm w-full overflow-hidden"
+              className="bg-white rounded-2xl shadow-xl border border-emerald-100/80 max-w-sm w-full overflow-hidden"
             >
               {/* Header block */}
-              <div className="bg-gradient-to-br from-indigo-900 to-slate-950 p-6 text-white text-center relative">
+              <div className="bg-gradient-to-br from-emerald-850 to-emerald-950 p-6 text-white text-center relative">
                 <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-white/20">
-                  <Lock className="w-6 h-6 text-indigo-300" />
+                  <Lock className="w-6 h-6 text-emerald-300" />
                 </div>
                 <h3 className="text-lg font-bold">অ্যাডমিন প্যানেল প্রবেশাধিকার</h3>
-                <p className="text-xs text-indigo-200/85 mt-1">
+                <p className="text-xs text-emerald-200/85 mt-1">
                   এই প্যানেলটি প্ল্যাটফর্মের কর্মকর্তা ও কাস্টমার কো-অর্ডিনেটরদের জন্য সুরক্ষিত।
                 </p>
               </div>
@@ -798,11 +845,11 @@ export default function App() {
               {/* Input details inside a form */}
               <form onSubmit={handleAdminLoginSubmit} className="p-6 space-y-4">
                 <div className="space-y-1.5">
-                  <label htmlFor="admin-passcode" className="text-xs font-bold text-slate-700 block">
+                  <label htmlFor="admin-passcode" className="text-xs font-bold text-emerald-700 block">
                     সিকিউরিটি পাসকোড
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                    <Lock className="w-4 h-4 text-emerald-400 absolute left-3 top-3.5" />
                     <input
                       id="admin-passcode"
                       type="password"
@@ -810,7 +857,7 @@ export default function App() {
                       placeholder="অ্যাডমিন পাসকোড লিখুন"
                       value={adminPasswordInput}
                       onChange={(e) => setAdminPasswordInput(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-sans tracking-wide text-slate-800 transition-all placeholder:text-slate-400"
+                      className="w-full pl-9 pr-4 py-2.5 bg-emerald-50/50 border border-emerald-100 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-sans tracking-wide text-emerald-950 transition-all placeholder:text-emerald-400"
                     />
                   </div>
                 </div>
@@ -821,23 +868,23 @@ export default function App() {
                   </p>
                 )}
 
-                <div className="text-[10px] text-slate-400 bg-slate-50 p-2.5 rounded-lg space-y-1">
-                  <p className="font-semibold text-slate-500">সহায়তা নোট:</p>
-                  <p>• লোকাল পাসকোড: <code className="font-mono bg-slate-200 px-1 py-0.2 rounded text-slate-700">admin2026</code></p>
-                  <p>• পরিবেশ ভ্যারিয়েবল দ্বারা Vercel এ <code className="font-mono bg-slate-200 px-1 py-0.2 rounded text-slate-700">VITE_ADMIN_PASSWORD</code> দিয়ে কাস্টম পাসকোড সেট করতে পারেন।</p>
+                <div className="text-[10px] text-emerald-700 bg-emerald-50/50 p-2.5 rounded-lg space-y-1">
+                  <p className="font-semibold text-emerald-800">সহায়তা নোট:</p>
+                  <p>• লোকাল পাসকোড: <code className="font-mono bg-emerald-100 px-1 py-0.2 rounded text-emerald-950">admin2026</code></p>
+                  <p>• পরিবেশ ভ্যারিয়েবল দ্বারা Vercel এ <code className="font-mono bg-emerald-100 px-1 py-0.2 rounded text-emerald-950">VITE_ADMIN_PASSWORD</code> দিয়ে কাস্টম পাসকোড সেট করতে পারেন।</p>
                 </div>
 
                 <div className="flex gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => setShowAdminLoginModal(false)}
-                    className="flex-1 px-4 py-2 text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200/60 rounded-xl text-xs font-bold transition-all"
+                    className="flex-1 px-4 py-2 text-emerald-850 hover:text-emerald-950 bg-emerald-100/50 hover:bg-emerald-100 rounded-xl text-xs font-bold transition-all"
                   >
                     বাতিল
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                    className="flex-1 px-4 py-2 bg-emerald-750 hover:bg-emerald-850 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
                   >
                     যাচাই করুন
                   </button>

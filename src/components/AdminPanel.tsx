@@ -129,78 +129,146 @@ export default function AdminPanel({
       </div>
 
       {/* Top Admin Status Counters */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-[#faf9f6]/50 p-4 border border-neutral-300">
-          <p className="text-[10px] text-neutral-455 font-bold uppercase font-mono tracking-widest">কাস্টম অর্ডার</p>
-          <h3 className="text-xl font-black text-neutral-950 font-mono mt-1">{orders.length}</h3>
-          <span className="text-[9px] text-neutral-400 font-mono block border-t border-neutral-200 mt-1.5 pt-0.5">মোট রিসিভড</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Card 1: Custom Orders */}
+        <div className="bg-[#faf9f6] hover:bg-[#f3f1eb] p-5 rounded-2xl border border-neutral-300 shadow-xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
+          <div className="absolute top-4 right-4 bg-neutral-200/50 group-hover:bg-neutral-950 group-hover:text-[#faf9f6] text-neutral-700 p-2 rounded-xl transition-all duration-300">
+            <Package className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">কাস্টম অর্ডার</p>
+            <h3 className="text-2xl font-black text-neutral-950 font-mono mt-2 tracking-tight">
+              {orders.length}
+            </h3>
+          </div>
+          <span className="text-[10px] text-neutral-450 font-sans block border-t border-neutral-200/80 mt-3 pt-1.5">
+            মোট সংকলন রিসিভড
+          </span>
         </div>
 
-        <div className="bg-[#faf9f6]/50 p-4 border border-neutral-300">
-          <p className="text-[10px] text-neutral-455 font-bold uppercase font-mono tracking-widest">রেভিনিউ</p>
-          <h3 className="text-xl font-black text-neutral-950 font-mono mt-1">{totalEarnings.toFixed(1)} ৳</h3>
-          <span className="text-[9px] text-neutral-400 font-mono block border-t border-neutral-200 mt-1.5 pt-0.5 font-sans">সব পেমেন্ট</span>
+        {/* Card 2: Revenue */}
+        <div className="bg-[#faf9f6] hover:bg-[#f3f1eb] p-5 rounded-2xl border border-neutral-300 shadow-xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
+          <div className="absolute top-4 right-4 bg-neutral-200/50 group-hover:bg-neutral-950 group-hover:text-[#faf9f6] text-neutral-700 p-2 rounded-xl transition-all duration-300">
+            <DollarSign className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">মোট রেভিনিউ</p>
+            <h3 className="text-2xl font-black text-neutral-950 font-mono mt-2 tracking-tight">
+              {totalEarnings.toFixed(1)} <span className="text-sm font-sans font-bold">৳</span>
+            </h3>
+          </div>
+          <span className="text-[10px] text-neutral-455 font-sans block border-t border-neutral-200/80 mt-3 pt-1.5">
+            সাকসেসফুল পেমেন্ট
+          </span>
         </div>
 
-        <div className="bg-[#faf9f6]/50 p-4 border border-neutral-300">
-          <p className="text-[10px] text-neutral-455 font-bold uppercase font-mono tracking-widest">মুদ্রিত A4 পৃষ্ঠা</p>
-          <h3 className="text-xl font-black text-neutral-950 font-mono mt-1">{totalPrintedA4Pages}</h3>
-          <span className="text-[9px] text-neutral-400 font-mono block border-t border-neutral-200 mt-1.5 pt-0.5">সংকলনে প্রিন্ট</span>
+        {/* Card 3: Printed A4 Pages */}
+        <div className="bg-[#faf9f6] hover:bg-[#f3f1eb] p-5 rounded-2xl border border-neutral-300 shadow-xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
+          <div className="absolute top-4 right-4 bg-neutral-200/50 group-hover:bg-neutral-950 group-hover:text-[#faf9f6] text-neutral-700 p-2 rounded-xl transition-all duration-300">
+            <Printer className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">মুদ্রিত পৃষ্ঠা</p>
+            <h3 className="text-2xl font-black text-neutral-950 font-mono mt-2 tracking-tight">
+              {totalPrintedA4Pages} <span className="text-xs font-sans text-neutral-500 font-normal">A4</span>
+            </h3>
+          </div>
+          <span className="text-[10px] text-neutral-450 font-sans block border-t border-neutral-200/80 mt-3 pt-1.5">
+            প্রিন্ট হওয়া পৃষ্ঠা সংখ্যা
+          </span>
         </div>
 
-        <div className="bg-[#faf9f6]/50 p-4 border border-neutral-300">
-          <p className="text-[10px] text-neutral-455 font-bold uppercase font-mono tracking-widest">প্রবন্ধ প্রকাশ</p>
-          <h3 className="text-xl font-black text-neutral-950 font-mono mt-1">
-            {articles.filter(a => a.status === 'published').length} টি
-          </h3>
-          <span className="text-[9px] text-neutral-400 font-mono block border-t border-neutral-200 mt-1.5 pt-0.5">লাইভ কলাম</span>
+        {/* Card 4: Published Articles */}
+        <div className="bg-[#faf9f6] hover:bg-[#f3f1eb] p-5 rounded-2xl border border-neutral-300 shadow-xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
+          <div className="absolute top-4 right-4 bg-neutral-200/50 group-hover:bg-neutral-950 group-hover:text-[#faf9f6] text-neutral-700 p-2 rounded-xl transition-all duration-300">
+            <BookOpen className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">প্রকাশিত প্রবন্ধ</p>
+            <h3 className="text-2xl font-black text-neutral-950 font-mono mt-2 tracking-tight">
+              {articles.filter(a => a.status === 'published').length} <span className="text-xs font-sans text-neutral-500 font-normal">টি</span>
+            </h3>
+          </div>
+          <span className="text-[10px] text-neutral-450 font-sans block border-t border-neutral-200/80 mt-3 pt-1.5">
+            লাইভ রিডিং কলাম
+          </span>
         </div>
       </div>
 
       {/* Admin Panel Nav tabs */}
-      <div className="flex flex-wrap border-b border-neutral-300 items-center gap-x-4 gap-y-1.5 py-1 text-xs">
+      <div className="mt-6 p-1.5 border border-neutral-300 bg-[#faf9f6]/90 backdrop-blur-xs rounded-2xl flex flex-wrap gap-2 shadow-xs items-center" id="admin-panel-tabs">
         <button
           onClick={() => setActiveSubTab('orders')}
-          className={`py-2 px-1 transition-all ${
+          className={`relative flex items-center gap-2 py-2 px-3.5 text-xs transition-all duration-300 rounded-xl cursor-pointer ${
             activeSubTab === 'orders' 
-              ? 'text-neutral-950 border-b-2 border-neutral-950 font-black' 
-              : 'text-neutral-450 hover:text-neutral-950'
+              ? 'bg-[#1e293b] text-white shadow-xs font-black' 
+              : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-200/50 font-bold'
           }`}
         >
-          [ অর্ডারসমূহ ({orders.length}) ]
+          <Package className="w-4 h-4 shrink-0" />
+          <span>অর্ডারসমূহ</span>
+          {orders.length > 0 && (
+            <span className={`px-1.5 py-0.5 text-[10px] rounded-md font-mono ${
+              activeSubTab === 'orders' ? 'bg-amber-400 text-neutral-950 font-black' : 'bg-neutral-200 text-neutral-700'
+            }`}>
+              {orders.length}
+            </span>
+          )}
+          {activeSubTab === 'orders' && (
+            <motion.span layoutId="active-admin-subtab-dot" className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+          )}
         </button>
-        <span className="text-neutral-300">/</span>
+
         <button
           onClick={() => setActiveSubTab('content-moderation')}
-          className={`py-2 px-1 transition-all ${
+          className={`relative flex items-center gap-2 py-2 px-3.5 text-xs transition-all duration-300 rounded-xl cursor-pointer ${
             activeSubTab === 'content-moderation' 
-              ? 'text-neutral-950 border-b-2 border-neutral-950 font-black' 
-              : 'text-neutral-455 hover:text-neutral-950'
+              ? 'bg-[#1e293b] text-white shadow-xs font-black' 
+              : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-200/50 font-bold'
           }`}
         >
-          কন্টেন্ট মডারেশন
+          <FileText className="w-4 h-4 shrink-0" />
+          <span>কন্টেন্ট মডারেশন</span>
+          {activeSubTab === 'content-moderation' && (
+            <motion.span layoutId="active-admin-subtab-dot" className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+          )}
         </button>
-        <span className="text-neutral-300">/</span>
+
         <button
           onClick={() => setActiveSubTab('writer-list')}
-          className={`py-2 px-1 transition-all ${
+          className={`relative flex items-center gap-2 py-2 px-3.5 text-xs transition-all duration-300 rounded-xl cursor-pointer ${
             activeSubTab === 'writer-list' 
-              ? 'text-neutral-950 border-b-2 border-neutral-950 font-black' 
-              : 'text-neutral-455 hover:text-neutral-950'
+              ? 'bg-[#1e293b] text-white shadow-xs font-black' 
+              : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-200/50 font-bold'
           }`}
         >
-          লেখক ও ইউজার
+          <Users className="w-4 h-4 shrink-0" />
+          <span>লেখক ও ইউজার</span>
+          {activeSubTab === 'writer-list' && (
+            <motion.span layoutId="active-admin-subtab-dot" className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+          )}
         </button>
-        <span className="text-neutral-300">/</span>
+
         <button
           onClick={() => setActiveSubTab('writer-requests')}
-          className={`py-2 px-1 transition-all ${
+          className={`relative flex items-center gap-2 py-2 px-3.5 text-xs transition-all duration-300 rounded-xl cursor-pointer ${
             activeSubTab === 'writer-requests' 
-              ? 'text-neutral-950 border-b-2 border-neutral-950 font-black' 
-              : 'text-neutral-455 hover:text-neutral-950'
+              ? 'bg-[#1e293b] text-white shadow-xs font-black' 
+              : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-200/50 font-bold'
           }`}
         >
-          আবেদনপত্র ({writerApplications.filter(a => a.status === 'pending').length})
+          <Shield className="w-4 h-4 shrink-0" />
+          <span>আবেদনপত্র</span>
+          {writerApplications.filter(a => a.status === 'pending').length > 0 && (
+            <span className={`px-1.5 py-0.5 text-[10px] rounded-md font-mono ${
+              activeSubTab === 'writer-requests' ? 'bg-amber-400 text-neutral-950 font-black' : 'bg-neutral-200 text-neutral-700'
+            }`}>
+              {writerApplications.filter(a => a.status === 'pending').length}
+            </span>
+          )}
+          {activeSubTab === 'writer-requests' && (
+            <motion.span layoutId="active-admin-subtab-dot" className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+          )}
         </button>
       </div>
 
