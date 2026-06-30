@@ -89,13 +89,13 @@ export default function AdminPanel({
   const getOrderStatusBadge = (status: Order['status']) => {
     switch (status) {
       case 'Received':
-        return 'bg-blue-105 text-blue-800 border-blue-200';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'Printing':
         return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'Shipped':
         return 'bg-indigo-100 text-indigo-800 border-indigo-200';
       case 'Delivered':
-        return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
     }
   };
 
@@ -107,7 +107,7 @@ export default function AdminPanel({
     <div className="space-y-6" id="admin-panel">
       
       {/* read2print commission revenue overview */}
-      <div className="bg-transparent text-neutral-900 py-4 border-b border-neutral-300 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="bg-gradient-to-r from-emerald-50/20 via-[#faf0ec]/15 to-purple-50/20 text-neutral-900 p-4 rounded-2xl border border-neutral-300/85 flex flex-col md:flex-row justify-between items-center gap-4 shadow-3xs">
         <div className="space-y-1 text-center md:text-left">
           <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 font-mono">
             <span>[রেভিনিউ মডারেশন]</span>
@@ -119,77 +119,77 @@ export default function AdminPanel({
             নীতিমালা অনুযায়ী প্রতিটি কয়েন উপার্জনের (আনলক ও উপহার) ২৫% কমিশন প্ল্যাটফর্ম ফান্ডে জমা হয়।
           </p>
         </div>
-        <div className="bg-[#faf9f6]/80 rounded-md px-4 py-2 border border-neutral-300 text-center shrink-0 min-w-[200px]">
-          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider font-mono">রিসার্ভ কমিশন ব্যালেন্স</p>
-          <span className="text-2xl font-black text-neutral-950 font-serif flex items-center justify-center gap-1 mt-1">
+        <div className="bg-emerald-50/60 rounded-xl px-4 py-2.5 border border-emerald-200 text-center shrink-0 min-w-[200px] shadow-2xs">
+          <p className="text-[10px] text-emerald-650 font-bold uppercase tracking-wider font-mono">রিসার্ভ কমিশন ব্যালেন্স</p>
+          <span className="text-2xl font-black text-emerald-950 font-serif flex items-center justify-center gap-1 mt-1">
             🪙 {platformRevenue} কয়েন
           </span>
-          <p className="text-[10px] text-neutral-450 mt-0.5 font-mono">৳{(platformRevenue * 1.0).toFixed(1)} টাকা সমপরিমাণ</p>
+          <p className="text-[10px] text-emerald-500 mt-0.5 font-mono">৳{(platformRevenue * 1.0).toFixed(1)} টাকা সমপরিমাণ</p>
         </div>
       </div>
 
       {/* Top Admin Status Counters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Card 1: Custom Orders */}
-        <div className="bg-[#faf9f6] hover:bg-[#f3f1eb] p-5 rounded-2xl border border-neutral-300 shadow-xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
-          <div className="absolute top-4 right-4 bg-neutral-200/50 group-hover:bg-neutral-950 group-hover:text-[#faf9f6] text-neutral-700 p-2 rounded-xl transition-all duration-300">
+        <div className="bg-purple-50/80 hover:bg-purple-100/90 p-5 rounded-2xl border border-purple-200 shadow-2xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
+          <div className="absolute top-4 right-4 bg-purple-200/60 group-hover:bg-purple-900 group-hover:text-purple-50 text-purple-700 p-2 rounded-xl transition-all duration-300">
             <Package className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">কাস্টম অর্ডার</p>
-            <h3 className="text-2xl font-black text-neutral-950 font-mono mt-2 tracking-tight">
+            <p className="text-[10px] text-purple-600 font-bold uppercase tracking-wider font-mono">কাস্টম অর্ডার</p>
+            <h3 className="text-2xl font-black text-purple-950 font-mono mt-2 tracking-tight">
               {orders.length}
             </h3>
           </div>
-          <span className="text-[10px] text-neutral-450 font-sans block border-t border-neutral-200/80 mt-3 pt-1.5">
+          <span className="text-[10px] text-purple-500 font-sans block border-t border-purple-200/50 mt-3 pt-1.5">
             মোট সংকলন রিসিভড
           </span>
         </div>
 
         {/* Card 2: Revenue */}
-        <div className="bg-[#faf9f6] hover:bg-[#f3f1eb] p-5 rounded-2xl border border-neutral-300 shadow-xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
-          <div className="absolute top-4 right-4 bg-neutral-200/50 group-hover:bg-neutral-950 group-hover:text-[#faf9f6] text-neutral-700 p-2 rounded-xl transition-all duration-300">
+        <div className="bg-emerald-50/80 hover:bg-emerald-100/90 p-5 rounded-2xl border border-emerald-200 shadow-2xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
+          <div className="absolute top-4 right-4 bg-emerald-200/60 group-hover:bg-emerald-900 group-hover:text-emerald-50 text-emerald-700 p-2 rounded-xl transition-all duration-300">
             <DollarSign className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">মোট রেভিনিউ</p>
-            <h3 className="text-2xl font-black text-neutral-950 font-mono mt-2 tracking-tight">
+            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider font-mono">মোট রেভিনিউ</p>
+            <h3 className="text-2xl font-black text-emerald-950 font-mono mt-2 tracking-tight">
               {totalEarnings.toFixed(1)} <span className="text-sm font-sans font-bold">৳</span>
             </h3>
           </div>
-          <span className="text-[10px] text-neutral-455 font-sans block border-t border-neutral-200/80 mt-3 pt-1.5">
+          <span className="text-[10px] text-emerald-500 font-sans block border-t border-emerald-200/50 mt-3 pt-1.5">
             সাকসেসফুল পেমেন্ট
           </span>
         </div>
 
         {/* Card 3: Printed A4 Pages */}
-        <div className="bg-[#faf9f6] hover:bg-[#f3f1eb] p-5 rounded-2xl border border-neutral-300 shadow-xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
-          <div className="absolute top-4 right-4 bg-neutral-200/50 group-hover:bg-neutral-950 group-hover:text-[#faf9f6] text-neutral-700 p-2 rounded-xl transition-all duration-300">
+        <div className="bg-amber-50/80 hover:bg-amber-100/90 p-5 rounded-2xl border border-amber-200 shadow-2xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
+          <div className="absolute top-4 right-4 bg-amber-200/60 group-hover:bg-amber-900 group-hover:text-amber-50 text-amber-700 p-2 rounded-xl transition-all duration-300">
             <Printer className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">মুদ্রিত পৃষ্ঠা</p>
-            <h3 className="text-2xl font-black text-neutral-950 font-mono mt-2 tracking-tight">
+            <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider font-mono">মুদ্রিত পৃষ্ঠা</p>
+            <h3 className="text-2xl font-black text-amber-950 font-mono mt-2 tracking-tight">
               {totalPrintedA4Pages} <span className="text-xs font-sans text-neutral-500 font-normal">A4</span>
             </h3>
           </div>
-          <span className="text-[10px] text-neutral-450 font-sans block border-t border-neutral-200/80 mt-3 pt-1.5">
+          <span className="text-[10px] text-amber-500 font-sans block border-t border-amber-200/50 mt-3 pt-1.5">
             প্রিন্ট হওয়া পৃষ্ঠা সংখ্যা
           </span>
         </div>
 
         {/* Card 4: Published Articles */}
-        <div className="bg-[#faf9f6] hover:bg-[#f3f1eb] p-5 rounded-2xl border border-neutral-300 shadow-xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
-          <div className="absolute top-4 right-4 bg-neutral-200/50 group-hover:bg-neutral-950 group-hover:text-[#faf9f6] text-neutral-700 p-2 rounded-xl transition-all duration-300">
+        <div className="bg-[#faf0ec] hover:bg-[#f4e1d7] p-5 rounded-2xl border border-[#ecd2c5] shadow-2xs relative overflow-hidden group transition-all duration-300 flex flex-col justify-between min-h-[120px]">
+          <div className="absolute top-4 right-4 bg-[#ecd2c5]/55 group-hover:bg-[#873e23] group-hover:text-white text-[#873e23] p-2 rounded-xl transition-all duration-300">
             <BookOpen className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">প্রকাশিত প্রবন্ধ</p>
-            <h3 className="text-2xl font-black text-neutral-950 font-mono mt-2 tracking-tight">
-              {articles.filter(a => a.status === 'published').length} <span className="text-xs font-sans text-neutral-500 font-normal">টি</span>
+            <p className="text-[10px] text-[#b05c3d] font-bold uppercase tracking-wider font-mono">প্রকাশিত প্রবন্ধ</p>
+            <h3 className="text-2xl font-black text-[#5e2b18] font-mono mt-2 tracking-tight">
+              {articles.filter(a => a.status === 'published').length} <span className="text-xs font-sans text-[#b05c3d] font-normal">টি</span>
             </h3>
           </div>
-          <span className="text-[10px] text-neutral-450 font-sans block border-t border-neutral-200/80 mt-3 pt-1.5">
+          <span className="text-[10px] text-[#b05c3d]/90 font-sans block border-t border-[#ecd2c5]/50 mt-3 pt-1.5">
             লাইভ রিডিং কলাম
           </span>
         </div>
@@ -551,9 +551,9 @@ export default function AdminPanel({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Monthly Closing Panel */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-3xs space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                      <Wallet className="w-5 h-5 text-indigo-650" />
-                      <h4 className="font-extrabold text-slate-800 text-sm">মাসিক সেটেলমেন্ট ও ক্লোজিং (Settlement)</h4>
+                    <div className="flex items-center gap-2 pb-2 border-b border-purple-100">
+                      <Wallet className="w-5 h-5 text-purple-650" />
+                      <h4 className="font-extrabold text-purple-900 text-sm">মাসিক সেটেলমেন্ট ও ক্লোজিং (Settlement)</h4>
                     </div>
 
                     <div className="space-y-3.5">
