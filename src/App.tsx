@@ -342,6 +342,10 @@ export default function App() {
     }
   };
 
+  const handleUpdateWriter = (updatedWriter: Writer) => {
+    setWriters(prev => prev.map(w => w.id === updatedWriter.id ? updatedWriter : w));
+  };
+
   const handleAwardCoinsToWriter = (writerId: string, amount: number) => {
     const commission = Math.round(amount * 0.25);
     const netAmount = amount - commission;
@@ -463,71 +467,31 @@ export default function App() {
           const data = await response.json();
           if (Array.isArray(data) && data.length > 0) {
             const mapped = data.map((item: any) => ({
-              id: item.id?.toString(),
+              id: String(item.id),
               title: item.title,
               content: item.content,
               category: item.category,
-              subCategory: item.subCategory || "",
-              tags: Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(',') : []),
-              writerId: item.writerId || "w-admin",
-              writerName: item.writerName || item.author || "মডারেটর",
-              writerAvatar: item.writerAvatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-              status: item.status || "published",
-              createdAt: item.createdAt || item.created_at?.split('T')[0] || "2026-06-22",
+              subCategory: item.subCategory || item.sub_category || '',
+              tags: Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? item.tags.split(',') : []),
+              writerId: item.writerId || item.writer_id || 'w-admin',
+              writerName: item.writerName || item.author || 'মডারেটর',
+              writerAvatar: item.writerAvatar || item.writer_avatar || '',
+              status: item.status || 'published',
+              createdAt: item.createdAt || item.created_at || new Date().toISOString().split('T')[0],
               reads: Number(item.reads) || 0,
-              wordCount: Number(item.wordCount) || item.content?.split(/\s+/).filter(Boolean).length || 0,
-              requiredCoins: Number(item.requiredCoins) || Number(item.coins) || 0
+              wordCount: Number(item.wordCount) || Number(item.word_count) || 0,
+              requiredCoins: Number(item.requiredCoins) ?? Number(item.coins) ?? 0,
+              hidden: !!item.hidden
             }));
             setArticles(mapped);
           }
         }
       } catch (err) {
-        console.error("Failed to load articles from dynamic database:", err);
+        console.error("Failed to load dynamic articles from backend database:", err);
       }
     };
     fetchArticles();
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem('r2p_cart', JSON.stringify(cart));
-  }, [cart]);
-
-  useEffect(() => {
-    localStorage.setItem('r2p_saved', JSON.stringify(savedArticles));
-  }, [savedArticles]);
-
-  useEffect(() => {
-    localStorage.setItem('r2p_folders', JSON.stringify(customFolders));
-  }, [customFolders]);
-
-  useEffect(() => {
-    localStorage.setItem('r2p_orders', JSON.stringify(orders));
-  }, [orders]);
-
-  useEffect(() => {
-    localStorage.setItem('r2p_writer_applications', JSON.stringify(writerApplications));
-  }, [writerApplications]);
-
-  useEffect(() => {
-    localStorage.setItem('r2p_platform_revenue', String(platformRevenue));
-  }, [platformRevenue]);
-
-
-  // Handlers
-  const handleUpdateWriter = (updatedWriter: Writer) => {
-    setWriters(prev => prev.map(w => w.id === updatedWriter.id ? updatedWriter : w));
-    // update author info on related articles
-    setArticles(prev => prev.map(art => {
-      if (art.writerId === updatedWriter.id) {
-        return {
-          ...art,
-          writerName: updatedWriter.name,
-          writerAvatar: updatedWriter.avatar
-        };
-      }
-      return art;
-    }));
-  };
 
   const handleAddArticle = async (newArticle: Article) => {
     // Add locally for instant UI update
@@ -557,7 +521,7 @@ export default function App() {
         const result = await response.json();
         console.log("Published article recorded dynamically in database:", result);
       } else {
-        console.error("Failed to records article dynamically");
+        console.error("Failed to record article dynamically");
       }
     } catch (err) {
       console.error("Failed to commit article publication to API:", err);
@@ -570,7 +534,6 @@ export default function App() {
 
   const handleDeleteArticle = (id: string) => {
     setArticles(prev => prev.filter(art => art.id !== id));
-    // Also remove from saved list and cart
     setSavedArticles(prev => prev.filter(artId => artId !== id));
     setCart(prev => prev.filter(item => item.articleId !== id));
   };
@@ -595,7 +558,6 @@ export default function App() {
         }
 
         const newFolders = { ...prev, [folderName]: updatedFolder };
-        // Clean empty folders
         if (updatedFolder.length === 0) {
           delete newFolders[folderName];
         }
@@ -628,13 +590,13 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f8f4] text-neutral-900 flex flex-col font-sans selection:bg-emerald-200 selection:text-emerald-950 relative overflow-x-hidden">
+    <div className="min-h-screen bg-neutral-50 text-neutral-800 flex flex-col font-sans selection:bg-indigo-500/20 selection:text-indigo-950 relative overflow-x-hidden" id="app-root">
       
-      {/* Soft Ambient animated background blobs */}
+      {/* Soft Ambient animated background blobs (Obsidian Indigo Theme) */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <motion.div 
           animate={{
-            x: [0, 40, -20, 0],
+            x: [0, 40, -30, 0],
             y: [0, -50, 40, 0],
             scale: [1, 1.1, 0.9, 1],
           }}
@@ -643,12 +605,12 @@ export default function App() {
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-emerald-100/35 rounded-full blur-[130px]" 
+          className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-slate-200/20 rounded-full blur-[130px]" 
         />
         <motion.div 
           animate={{
-            x: [0, -50, 30, 0],
-            y: [0, 30, -50, 0],
+            x: [0, -50, 40, 0],
+            y: [0, 40, -50, 0],
             scale: [1, 0.9, 1.1, 1],
           }}
           transition={{
@@ -656,7 +618,7 @@ export default function App() {
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className="absolute top-1/3 -right-40 w-[550px] h-[550px] bg-[#faf6ee]/60 rounded-full blur-[110px]" 
+          className="absolute top-1/4 -right-40 w-[550px] h-[550px] bg-indigo-100/10 rounded-full blur-[110px]" 
         />
         <motion.div 
           animate={{
@@ -665,56 +627,56 @@ export default function App() {
             scale: [1, 1.05, 0.95, 1],
           }}
           transition={{
-            duration: 16,
+            duration: 18,
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className="absolute -bottom-20 left-1/3 w-[500px] h-[500px] bg-emerald-50/50 rounded-full blur-[120px]" 
+          className="absolute -bottom-20 left-1/3 w-[500px] h-[500px] bg-slate-200/15 rounded-full blur-[120px]" 
         />
       </div>
 
-      {/* Editorial Broadsheet Masthead */}
-      <header className="sticky top-0 z-45 bg-[#f4f8f4]/95 backdrop-blur-md border-b border-emerald-100/60 shadow-2xs relative z-10" id="app-header">
+      {/* Editorial Broadsheet Masthead - Redesigned without strokes */}
+      <header className="sticky top-0 z-45 bg-white/95 backdrop-blur-md border-b border-neutral-200 relative z-10" id="app-header">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 flex justify-between items-center">
           
           {/* Logo & Sub-header */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-800 text-[#f4f8f4] flex items-center justify-center font-digits text-sm font-black rounded-lg shadow-sm">
+            <div className="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center font-digits text-sm font-black rounded-lg shadow-md shadow-indigo-500/20">
               R
             </div>
             <div>
-              <h1 className="text-lg font-black tracking-tighter text-emerald-950 font-serif">read2print</h1>
-              <span className="text-[9px] text-emerald-800 font-bold block leading-none uppercase tracking-widest mt-0.5">মুদ্রণ ও সাহিত্য সংকলন</span>
+              <h1 className="text-lg font-black tracking-tighter text-indigo-950 font-serif">read2print</h1>
+              <span className="text-[9px] text-indigo-600 font-bold block leading-none uppercase tracking-widest mt-0.5">মুদ্রণ ও সাহিত্য সংকলন</span>
             </div>
           </div>
 
-          {/* Minimalist Switcher - Styled with soft matching colors and dynamic hover */}
-          <div className="flex items-center gap-2.5 text-xs text-emerald-800/80">
+          {/* Minimalist Switcher - Beautifully redesigned */}
+          <div className="flex items-center gap-2 text-xs text-neutral-600">
             <button
               onClick={() => setUserRole('reader')}
-              className={`py-1.5 px-3 rounded-full transition-all duration-300 font-sans font-bold flex items-center gap-1 ${
+              className={`py-1.5 px-3 rounded-full transition-all duration-300 font-sans font-bold flex items-center gap-1.5 cursor-pointer ${
                 userRole === 'reader'
-                  ? 'text-emerald-950 bg-emerald-100/80 shadow-2xs border border-emerald-200/50'
-                  : 'hover:text-emerald-950 hover:bg-emerald-50/50'
+                  ? 'text-indigo-950 bg-indigo-100/80 shadow-2xs border border-indigo-200/50'
+                  : 'hover:text-indigo-950 hover:bg-indigo-50/50'
               }`}
             >
-              पाठক প্রকাশনা
+              পাঠক প্রকাশনা
             </button>
             <button
               onClick={handleAdminTabClick}
-              className={`py-1.5 px-3 rounded-full transition-all duration-300 font-sans font-bold flex items-center gap-1 ${
+              className={`py-1.5 px-3 rounded-full transition-all duration-300 font-sans font-bold flex items-center gap-1.5 cursor-pointer ${
                 userRole === 'admin'
-                  ? 'text-white bg-emerald-850 shadow-2xs border border-emerald-900'
-                  : 'hover:text-emerald-950 hover:bg-emerald-50/50'
+                  ? 'text-white bg-indigo-600 shadow-2xs border border-indigo-700'
+                  : 'hover:text-indigo-950 hover:bg-indigo-50/50'
               }`}
             >
-              نিয়ন্ত্রণ মোড
+              নিয়ন্ত্রণ মোড
             </button>
             
             {isAdminAuthenticated && (
               <button
                 onClick={handleAdminLogout}
-                className="p-1.5 text-emerald-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                className="p-1.5 text-indigo-500 hover:text-red-650 hover:bg-red-50 rounded-full transition-all cursor-pointer"
                 title="লগআউট"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -725,20 +687,20 @@ export default function App() {
         </div>
       </header>
 
-      {/* Razor-thin Broadside Metadata Bar with glowing indicator and soft green gradient */}
-      <div className="bg-gradient-to-r from-emerald-50/60 via-emerald-100/30 to-emerald-50/60 border-b border-emerald-100/40 text-[10px] text-emerald-800 tracking-wide font-sans relative z-10">
+      {/* Razor-thin Broadside Metadata Bar with glowing indicator and soft neutral border */}
+      <div className="bg-neutral-50 border-b border-neutral-200 text-[10px] text-neutral-600 tracking-wide font-sans relative z-10">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-2 flex justify-between items-center leading-none">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
             </span>
             <span className="font-extrabold tracking-tight">সেন্ট্রাল ডাটাগ্রিড লাইভ</span>
           </div>
           
           <div className="flex gap-4 items-center">
-            <span>ভূমিকা: <span className="font-extrabold text-emerald-900">{userRole === 'reader' ? 'সংকলন পাঠক' : 'মডারেটর'}</span></span>
-            <span className="text-emerald-200">/</span>
+            <span>ভূমিকা: <span className="font-extrabold text-indigo-950">{userRole === 'reader' ? 'সংকলন পাঠক' : 'মডারেটর'}</span></span>
+            <span className="text-neutral-300">/</span>
             <span>মুদ্রণ রেডি পিডিএফ ডিস্ট্রিবিউশন</span>
           </div>
         </div>
