@@ -4,7 +4,7 @@ import {
   BookOpen, Search, Filter, Bookmark, ShoppingBag, ArrowRight, BookMarked, 
   Trash2, HelpCircle, MapPin, Phone, CreditCard, ChevronRight, CheckCircle2, 
   Layers, Settings, Sparkles, User, Printer, Eye, Share2, Info, Newspaper, Download, FileText, Coins, Clock, Star,
-  Home, Users, PenTool, List, LayoutGrid
+  Home, Users, PenTool
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import WriterPanel from './WriterPanel';
@@ -283,16 +283,7 @@ export default function ReaderPanel({
   const [coinFilterType, setCoinFilterType] = useState<'all' | 'free' | '10' | '30' | 'custom'>('all');
   const [customCoinLimit, setCustomCoinLimit] = useState<string>('');
 
-  // Grid/List toggle state with persistence
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
-    const saved = localStorage.getItem('read2print_view_mode');
-    return (saved === 'grid' || saved === 'list') ? saved : 'list';
-  });
-
-  const handleSetViewMode = (mode: 'list' | 'grid') => {
-    setViewMode(mode);
-    localStorage.setItem('read2print_view_mode', mode);
-  };
+  // List view has been removed from homepage; grid view is used by default.
 
   useEffect(() => {
     if (writers && writers.length > 0) {
@@ -865,36 +856,6 @@ export default function ReaderPanel({
                   </div>
                 </div>
 
-                {/* View Mode Grid/List Toggle */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono mr-1">
-                    লেআউট:
-                  </span>
-                  <div className="inline-flex bg-neutral-100 p-0.5 rounded-lg border border-neutral-200">
-                    <button
-                      onClick={() => handleSetViewMode('list')}
-                      className={`p-1 rounded-md transition-all flex items-center justify-center ${
-                        viewMode === 'list'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/50'
-                      }`}
-                      title="লিস্ট ভিউ"
-                    >
-                      <List className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleSetViewMode('grid')}
-                      className={`p-1 rounded-md transition-all flex items-center justify-center ${
-                        viewMode === 'grid'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/50'
-                      }`}
-                      title="গ্রিড ভিউ"
-                    >
-                      <LayoutGrid className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
               </div>
 
 
@@ -909,282 +870,149 @@ export default function ReaderPanel({
             ) : (
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={viewMode}
+                  key="grid"
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.4, ease: 'easeInOut' }}
-                  className={viewMode === 'list' ? "divide-y divide-neutral-200/80 border-t border-neutral-150/50" : "grid grid-cols-1 md:grid-cols-2 gap-6"}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
                 >
                   {filteredArticles.map((art, index) => {
                     const isInCart = cart.some(item => item.articleId === art.id);
                     const isSaved = savedArticles.includes(art.id);
                     
-                    if (viewMode === 'list') {
-                      return (
-                        <ScrollAnimateWrapper key={art.id}>
-                          <div className="flex flex-col md:flex-row md:items-center justify-between py-5 px-3 hover:bg-[#f8fafc] rounded-lg transition-all duration-300 ease-in-out group">
-                            {/* Left Section */}
-                            <div className="flex-1 min-w-0 pr-0 md:pr-6">
-                              <div className="flex items-center gap-1.5 flex-wrap text-[10px] md:text-xs text-neutral-500 font-medium mb-1">
-                                <span className="text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-sm">
+                    // Deterministic premium minimalist neutral/warm background shading instead of stark contrast/black strokes
+                    const grayShades = [
+                      'bg-[#f7f6f0] hover:bg-[#f3f2eb] border-transparent hover:shadow-xs',
+                      'bg-[#fcfbf9]/80 hover:bg-[#f7f6f0] border-transparent hover:shadow-xs',
+                      'bg-[#f4f3ed] hover:bg-[#eae8df] border-transparent hover:shadow-xs',
+                      'bg-[#f6f5ef] hover:bg-[#f0ede4] border-transparent hover:shadow-xs',
+                      'bg-[#faf9f6] hover:bg-[#f5f4ed] border border-neutral-200/50 hover:shadow-xs',
+                      'bg-[#f5f4ee] hover:bg-[#eae8df] border-transparent hover:shadow-xs'
+                    ];
+                    const chosenShade = grayShades[index % grayShades.length];
+                    
+                    return (
+                      <ScrollAnimateWrapper key={art.id}>
+                        <div 
+                          className={`${chosenShade} p-6 rounded-xl flex flex-col justify-between transition-all duration-300 group h-full`}
+                        >
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-2.5 py-0.5 bg-neutral-200 text-neutral-800 text-[10px] font-bold rounded-md">
                                   {art.category}
                                 </span>
                                 {art.subCategory && (
-                                  <>
-                                    <span className="text-neutral-300">•</span>
-                                    <span className="text-neutral-500 font-semibold">{art.subCategory}</span>
-                                  </>
+                                  <span className="text-[10px] text-neutral-550 font-medium"> {art.subCategory}</span>
                                 )}
                               </div>
-                              <h3 
-                                onClick={() => setViewingArticle(art)}
-                                className="font-bold text-neutral-900 text-lg group-hover:text-indigo-600 transition-colors cursor-pointer leading-snug font-serif mb-1"
-                              >
-                                {art.title}
-                              </h3>
                               
-                              <div className="flex items-center gap-2 mb-2">
-                                <div 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleViewAuthorProfileByWriterName(art.writerName);
-                                  }}
-                                  className="flex items-center gap-1.5 cursor-pointer hover:text-neutral-900 group/author text-xs text-neutral-600 font-medium"
+                              {/* Save & Bookmarking */}
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleToggleReadLater(art.id)}
+                                  className={`p-1.5 rounded-md transition-all ${
+                                    isSaved 
+                                      ? 'bg-[#eae8df] text-neutral-950' 
+                                      : 'text-neutral-400 hover:text-neutral-800 hover:bg-[#eae8df]/60'
+                                  }`}
+                                  title={isSaved ? 'বুকশেলফ থেকে সরান' : 'বুকশেলফে সেভ করুন'}
                                 >
-                                  <img 
-                                    src={art.writerAvatar} 
-                                    alt="" 
-                                    className="w-4 h-4 rounded-full object-cover border border-neutral-200" 
-                                  />
-                                  <span className="font-bold text-neutral-700 group-hover/author:underline">{art.writerName}</span>
-                                </div>
+                                  <Bookmark className="w-3.5 h-3.5 fill-current" />
+                                </button>
+                                <button
+                                  onClick={() => handleOpenFolderModal(art.id)}
+                                  className="text-neutral-400 hover:text-neutral-800 p-1.5 rounded-md hover:bg-[#eae8df]/60 transition-all"
+                                  title="কাস্টম ফোল্ডারে রাখুন"
+                                >
+                                  <Layers className="w-3.5 h-3.5 font-sans" />
+                                </button>
                               </div>
-
-                              <p className="text-xs text-neutral-500 leading-relaxed text-justify line-clamp-2 max-w-3xl">
-                                {art.content.replace(/<[^>]*>/g, '')}
-                              </p>
                             </div>
 
-                            {/* Right Section */}
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0 mt-4 md:mt-0">
-                              {/* Metadata */}
-                              <div className="flex items-center gap-3.5 text-xs text-neutral-500 font-sans border-b border-gray-100 pb-2 sm:pb-0 sm:border-none">
-                                <span className="inline-flex items-center gap-0.5 bg-neutral-100 text-neutral-800 font-bold px-2 py-0.5 rounded-md" title="প্রয়োজনীয় কয়েন">
-                                  🪙 <span className="font-digits">{art.requiredCoins || 0}</span>
-                                </span>
-                                <span className="font-medium"><span className="font-digits">{art.wordCount}</span> শব্দ</span>
-                                <span className="text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded flex items-center gap-1 font-medium" title="মোট পঠন সংখ্যা">
+                            <h3 
+                              onClick={() => setViewingArticle(art)}
+                              className="font-bold text-neutral-900 text-lg group-hover:text-indigo-600 transition-colors cursor-pointer leading-snug flex items-center justify-between gap-1.5 flex-wrap font-serif"
+                            >
+                              <span>{art.title}</span>
+                              <span className="inline-flex items-center gap-0.5 text-xs bg-neutral-100/80 text-neutral-800 font-bold px-2 py-0.5 rounded-md shrink-0 select-none" title="প্রয়োজনীয় কয়েন">
+                                🪙 <span className="font-digits">{art.requiredCoins || 0}</span>
+                              </span>
+                            </h3>
+
+                            <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewAuthorProfileByWriterName(art.writerName);
+                              }}
+                              className="flex items-center gap-2 cursor-pointer hover:text-neutral-900 group/author"
+                            >
+                              <img 
+                                src={art.writerAvatar} 
+                                alt="" 
+                                className="w-5 h-5 rounded-full object-cover transition-all" 
+                              />
+                              <span className="text-xs text-neutral-800 font-bold group-hover/author:underline">{art.writerName}</span>
+                              <span className="text-neutral-300 text-xs">•</span>
+                              <span className="text-[10px] text-neutral-400 font-sans flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                <span><span className="font-digits">{art.wordCount}</span> শব্দ</span>
+                                <span className="text-neutral-700 bg-neutral-200/50 px-1.5 py-0.2 rounded" title="মোট পঠন সংখ্যা">
                                   👁️ <span className="font-digits">{art.reads || 0}</span> বার
                                 </span>
-                              </div>
-
-                              {/* Buttons / Actions */}
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => setViewingArticle(art)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border border-indigo-200 flex items-center gap-1 transition-all"
-                                >
-                                  পুরো লেখা পড়ুন
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                </button>
-
-                                {/* Read Later Clock button */}
-                                <button
-                                  onClick={() => handleToggleReadLater(art.id)}
-                                  className={`p-1.5 rounded-lg border transition-all ${
-                                    isSaved 
-                                      ? 'bg-indigo-100 text-indigo-805 border-indigo-200 shadow-3xs' 
-                                      : 'bg-white hover:bg-gray-100 text-gray-500 border-gray-200 shadow-3xs'
-                                  }`}
-                                  title={isSaved ? 'পড়ার তালিকা থেকে বাদ দিন' : 'পরে পড়ুন (Read Later)'}
-                                >
-                                  <Clock className={`w-3.5 h-3.5 ${isSaved ? 'text-indigo-600' : 'text-gray-500'}`} />
-                                </button>
-
-                                {/* Add to Print */}
-                                <button
-                                  onClick={() => {
-                                    if (isInCart) {
-                                      onRemoveFromCart(art.id);
-                                    } else {
-                                      const isLocked = (art.requiredCoins || 0) > 0 && !unlockedArticles.includes(art.id);
-                                      if (isLocked) {
-                                        alert(`এই লেখাটি প্রিন্ট বাস্কেটে যুক্ত করতে হলে প্রথমে ${art.requiredCoins} কয়েন দিয়ে লেখাটি আনলক করতে হবে। দয়া করে লেখাটি পড়ে আনলক করে নিন।`);
-                                        setViewingArticle(art);
-                                        return;
-                                      }
-                                      onAddToCart({
-                                        articleId: art.id,
-                                        articleTitle: art.title,
-                                        writerName: art.writerName,
-                                        wordCount: art.wordCount,
-                                        content: art.content
-                                      });
-                                    }
-                                  }}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                                    isInCart 
-                                      ? 'bg-amber-100 text-amber-805 border border-amber-200' 
-                                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'
-                                  }`}
-                                >
-                                  <Printer className="w-3.5 h-3.5" />
-                                  {isInCart ? 'বই থেকে বাদ দিন' : 'অ্যাড টু প্রিন্ট'}
-                                </button>
-                              </div>
+                              </span>
                             </div>
+
+                            <p className="text-xs text-gray-500 leading-relaxed text-justify line-clamp-3">
+                              {art.content.replace(/<[^>]*>/g, '')}
+                            </p>
                           </div>
-                        </ScrollAnimateWrapper>
-                      );
-                    } else {
-                      // Deterministic premium minimalist neutral/warm background shading instead of stark contrast/black strokes
-                      const grayShades = [
-                        'bg-[#f7f6f0] hover:bg-[#f3f2eb] border-transparent hover:shadow-xs',
-                        'bg-[#fcfbf9]/80 hover:bg-[#f7f6f0] border-transparent hover:shadow-xs',
-                        'bg-[#f4f3ed] hover:bg-[#eae8df] border-transparent hover:shadow-xs',
-                        'bg-[#f6f5ef] hover:bg-[#f0ede4] border-transparent hover:shadow-xs',
-                        'bg-[#faf9f6] hover:bg-[#f5f4ed] border border-neutral-200/50 hover:shadow-xs',
-                        'bg-[#f5f4ee] hover:bg-[#eae8df] border-transparent hover:shadow-xs'
-                      ];
-                      const chosenShade = grayShades[index % grayShades.length];
-                      
-                      return (
-                        <ScrollAnimateWrapper key={art.id}>
-                          <div 
-                            className={`${chosenShade} p-6 rounded-xl flex flex-col justify-between transition-all duration-300 group h-full`}
-                          >
-                            <div className="space-y-3">
-                              <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="px-2.5 py-0.5 bg-neutral-200 text-neutral-800 text-[10px] font-bold rounded-md">
-                                    {art.category}
-                                  </span>
-                                  {art.subCategory && (
-                                    <span className="text-[10px] text-neutral-550 font-medium"> {art.subCategory}</span>
-                                  )}
-                                </div>
-                                
-                                {/* Save & Bookmarking */}
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={() => handleToggleReadLater(art.id)}
-                                    className={`p-1.5 rounded-md transition-all ${
-                                      isSaved 
-                                        ? 'bg-[#eae8df] text-neutral-950' 
-                                        : 'text-neutral-400 hover:text-neutral-800 hover:bg-[#eae8df]/60'
-                                    }`}
-                                    title={isSaved ? 'বুকশেলফ থেকে সরান' : 'বুকশেলফে সেভ করুন'}
-                                  >
-                                    <Bookmark className="w-3.5 h-3.5 fill-current" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleOpenFolderModal(art.id)}
-                                    className="text-neutral-400 hover:text-neutral-800 p-1.5 rounded-md hover:bg-[#eae8df]/60 transition-all"
-                                    title="কাস্টম ফোল্ডারে রাখুন"
-                                  >
-                                    <Layers className="w-3.5 h-3.5 font-sans" />
-                                  </button>
-                                </div>
-                              </div>
 
-                              <h3 
-                                onClick={() => setViewingArticle(art)}
-                                className="font-bold text-neutral-900 text-lg group-hover:text-indigo-600 transition-colors cursor-pointer leading-snug flex items-center justify-between gap-1.5 flex-wrap font-serif"
-                              >
-                                <span>{art.title}</span>
-                                <span className="inline-flex items-center gap-0.5 text-xs bg-neutral-100/80 text-neutral-800 font-bold px-2 py-0.5 rounded-md shrink-0 select-none" title="প্রয়োজনীয় কয়েন">
-                                  🪙 <span className="font-digits">{art.requiredCoins || 0}</span>
-                                </span>
-                              </h3>
+                          <div className="flex justify-between items-center pt-4 border-t border-gray-200/40 mt-4">
+                            <button
+                              onClick={() => setViewingArticle(art)}
+                              className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5"
+                            >
+                              পুরো লেখা পড়ুন
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
 
-                              <div 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleViewAuthorProfileByWriterName(art.writerName);
-                                }}
-                                className="flex items-center gap-2 cursor-pointer hover:text-neutral-900 group/author"
-                              >
-                                <img 
-                                  src={art.writerAvatar} 
-                                  alt="" 
-                                  className="w-5 h-5 rounded-full object-cover transition-all" 
-                                />
-                                <span className="text-xs text-neutral-800 font-bold group-hover/author:underline">{art.writerName}</span>
-                                <span className="text-neutral-300 text-xs">•</span>
-                                <span className="text-[10px] text-neutral-400 font-sans flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                  <span><span className="font-digits">{art.wordCount}</span> শব্দ</span>
-                                  <span className="text-neutral-700 bg-neutral-200/50 px-1.5 py-0.2 rounded" title="মোট পঠন সংখ্যা">
-                                    👁️ <span className="font-digits">{art.reads || 0}</span> বার
-                                  </span>
-                                </span>
-                              </div>
-
-                              <p className="text-xs text-gray-500 leading-relaxed text-justify line-clamp-3">
-                                {art.content.replace(/<[^>]*>/g, '')}
-                              </p>
-                            </div>
-
-                            <div className="flex justify-between items-center pt-4 border-t border-gray-200/40 mt-4">
+                            <div className="flex gap-2 items-center">
+                              {/* Add to Print */}
                               <button
-                                onClick={() => setViewingArticle(art)}
-                                className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5"
-                              >
-                                পুরো লেখা পড়ুন
-                                <ChevronRight className="w-3.5 h-3.5" />
-                              </button>
-
-                              <div className="flex gap-2 items-center">
-                                {/* Read Later Clock icon button */}
-                                <button
-                                  onClick={() => handleToggleReadLater(art.id)}
-                                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 md:gap-1.5 transition-all ${
-                                    isSaved 
-                                      ? 'bg-indigo-100 text-indigo-805 border border-indigo-200 shadow-3xs' 
-                                      : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 shadow-3xs'
-                                  }`}
-                                  title={isSaved ? 'পড়ার তালিকা থেকে বাদ দিন' : 'পরে পড়ুন (Read Later)'}
-                                >
-                                  <Clock className={`w-3.5 h-3.5 ${isSaved ? 'text-indigo-600' : 'text-gray-500'}`} />
-                                  <span>{isSaved ? 'যুক্ত' : 'পরে পড়ুন'}</span>
-                                </button>
-
-                                {/* Add to Print */}
-                                <button
-                                  onClick={() => {
-                                    if (isInCart) {
-                                      onRemoveFromCart(art.id);
-                                    } else {
-                                      const isLocked = (art.requiredCoins || 0) > 0 && !unlockedArticles.includes(art.id);
-                                      if (isLocked) {
-                                        alert(`এই লেখাটি প্রিন্ট বাস্কেটে যুক্ত করতে হলে প্রথমে ${art.requiredCoins} কয়েন দিয়ে লেখাটি আনলক করতে হবে। দয়া করে লেখাটি পড়ে আনলক করে নিন।`);
-                                        setViewingArticle(art);
-                                        return;
-                                      }
-                                      onAddToCart({
-                                        articleId: art.id,
-                                        articleTitle: art.title,
-                                        writerName: art.writerName,
-                                        wordCount: art.wordCount,
-                                        content: art.content
-                                      });
+                                onClick={() => {
+                                  if (isInCart) {
+                                    onRemoveFromCart(art.id);
+                                  } else {
+                                    const isLocked = (art.requiredCoins || 0) > 0 && !unlockedArticles.includes(art.id);
+                                    if (isLocked) {
+                                      alert(`এই লেখাটি প্রিন্ট বাস্কেটে যুক্ত করতে হলে প্রথমে ${art.requiredCoins} কয়েন দিয়ে লেখাটি আনলক করতে হবে। দয়া করে লেখাটি পড়ে আনলক করে নিন।`);
+                                      setViewingArticle(art);
+                                      return;
                                     }
-                                  }}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                                    isInCart 
-                                      ? 'bg-amber-100 text-amber-805 border border-amber-200' 
-                                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'
-                                  }`}
-                                >
-                                  <Printer className="w-3.5 h-3.5" />
-                                  {isInCart ? 'বই থেকে বাদ দিন' : 'অ্যাড টু প্রিন্ট'}
-                                </button>
-                              </div>
+                                    onAddToCart({
+                                      articleId: art.id,
+                                      articleTitle: art.title,
+                                      writerName: art.writerName,
+                                      wordCount: art.wordCount,
+                                      content: art.content
+                                    });
+                                  }
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                                  isInCart 
+                                    ? 'bg-amber-100 text-amber-850 border border-amber-200' 
+                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                                }`}
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                                {isInCart ? 'বই থেকে বাদ দিন' : 'অ্যাড টু প্রিন্ট'}
+                              </button>
                             </div>
                           </div>
-                        </ScrollAnimateWrapper>
-                      );
-                    }
+                        </div>
+                      </ScrollAnimateWrapper>
+                    );
                   })}
                 </motion.div>
               </AnimatePresence>

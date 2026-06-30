@@ -12,11 +12,23 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("CRITICAL ERROR: SUPABASE_URL or SUPABASE_ANON_KEY is not defined in the environment variables.");
+const isSupabaseConfigured = !!(
+  supabaseUrl &&
+  supabaseUrl.trim() !== "" &&
+  supabaseUrl.startsWith("http") &&
+  supabaseAnonKey &&
+  supabaseAnonKey.trim() !== "" &&
+  !supabaseUrl.includes("PLACEHOLDER")
+);
+
+if (!isSupabaseConfigured) {
+  console.log("[Database Connection] SUPABASE_URL or SUPABASE_ANON_KEY is empty/placeholder. Working in standard client/in-memory fallback mode.");
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(
+  isSupabaseConfigured ? supabaseUrl : "https://placeholder-project.supabase.co",
+  isSupabaseConfigured ? supabaseAnonKey : "placeholder-key"
+);
 
 // In-Memory fallback caches in case tables do not exist in Supabase yet
 let fallbackArticles = [...INITIAL_ARTICLES];
@@ -189,6 +201,7 @@ async function startServer() {
 
   // Seed default articles into Supabase 'articles' table if empty
   async function seedDatabaseIfEmpty() {
+    if (!isSupabaseConfigured) return;
     try {
       const { count, error } = await supabase
         .from("articles")
@@ -241,6 +254,7 @@ async function startServer() {
 
   // Seed default admin and demo users into Supabase 'users' table if empty
   async function seedDefaultUsers() {
+    if (!isSupabaseConfigured) return;
     try {
       const { data: existingUsers, error } = await supabase
         .from("users")
@@ -364,6 +378,9 @@ async function startServer() {
   // 1. GET /api/articles/get
   app.get("/api/articles/get", async (req, res) => {
     try {
+      if (!isSupabaseConfigured) {
+        return res.json(getMappedArticles(fallbackArticles));
+      }
       const { data, error } = await supabase
         .from("articles")
         .select("*")
@@ -429,6 +446,30 @@ async function startServer() {
 
       const resolvedTags = Array.isArray(tags) ? tags.join(",") : (typeof tags === "string" ? tags : "");
       const resolvedWordCount = wordCount || content.split(/\s+/).filter(Boolean).length;
+
+      if (!isSupabaseConfigured) {
+        console.log("[Fallback Mode] Creating article in-memory.");
+        const inMemoryArt = {
+          id: "art-" + Date.now(),
+          title,
+          content,
+          category,
+          subCategory,
+          tags: resolvedTags ? resolvedTags.split(",") : [],
+          writerId,
+          writerName: author,
+          writerAvatar,
+          status,
+          createdAt: new Date().toISOString().split("T")[0],
+          created_at: new Date().toISOString(),
+          reads: 0,
+          wordCount: resolvedWordCount,
+          requiredCoins: Number(coins) || 0,
+          coins: Number(coins) || 0
+        };
+        fallbackArticles.unshift(inMemoryArt);
+        return res.status(201).json(inMemoryArt);
+      }
 
       const { data, error } = await supabase
         .from("articles")
@@ -533,6 +574,54 @@ async function startServer() {
       }
 
       const lowerUsername = username.trim().toLowerCase();
+
+      if (!isSupabaseConfigured) {
+        // Fallback check
+        const existing = fallbackUsers.find(u => u.username === lowerUsername);
+        if (existing) {
+          return res.status(409).json({ error: "Username already exists. Please choose another username." });
+        }
+        // Proceed to register in memory
+        const { hash, salt } = hashPassword(password);
+        const userAvatar = avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(username)}`;
+        const userBio = bio || "মুদ্রণ ও সাহিত্যপ্রেমী কলাম পাঠক।";
+        const inMemoryUser = {
+          id: "usr-" + Date.now(),
+          name: (name || username).trim(),
+          username: lowerUsername,
+          password_hash: hash,
+          salt: salt,
+          avatar: userAvatar,
+          coins: 200,
+          spent_amount: 0.00,
+          bio: userBio,
+          role: "reader",
+          lifetime_coins: 200,
+          monthly_coins: 200,
+          balance_bdt: 0.00,
+          created_at: new Date().toISOString()
+        };
+        fallbackUsers.push(inMemoryUser);
+        const token = signJwt({ userId: inMemoryUser.id, username: inMemoryUser.username, role: inMemoryUser.role });
+        return res.status(201).json({
+          success: true,
+          message: "Registration successful (In-Memory Fallback)!",
+          user: {
+            id: inMemoryUser.id,
+            name: inMemoryUser.name,
+            username: inMemoryUser.username,
+            avatar: inMemoryUser.avatar,
+            currentCoins: inMemoryUser.coins,
+            spentAmount: 0,
+            bio: inMemoryUser.bio,
+            role: inMemoryUser.role,
+            lifetime_coins: 200,
+            monthly_coins: 200,
+            balance_bdt: 0
+          },
+          token
+        });
+      }
 
       // Check if username already exists in Supabase
       const { data: existingUsers, error: checkError } = await supabase
@@ -667,6 +756,37 @@ async function startServer() {
       }
 
       const lowerUsername = username.trim().toLowerCase();
+
+      if (!isSupabaseConfigured) {
+        // Fallback login
+        const inMemoryUser = fallbackUsers.find(u => u.username === lowerUsername);
+        if (!inMemoryUser) {
+          return res.status(401).json({ error: "Invalid username or password. User not found." });
+        }
+        const isValid = verifyPassword(password, inMemoryUser.password_hash, inMemoryUser.salt);
+        if (!isValid) {
+          return res.status(401).json({ error: "Invalid username or password. Please try again." });
+        }
+        const token = signJwt({ userId: inMemoryUser.id, username: inMemoryUser.username, role: inMemoryUser.role });
+        return res.json({
+          success: true,
+          message: "Login successful (In-Memory Fallback)!",
+          user: {
+            id: inMemoryUser.id.toString(),
+            name: inMemoryUser.name,
+            username: inMemoryUser.username,
+            avatar: inMemoryUser.avatar,
+            currentCoins: inMemoryUser.coins,
+            spentAmount: Number(inMemoryUser.spent_amount) || 0,
+            bio: inMemoryUser.bio,
+            role: inMemoryUser.role,
+            lifetime_coins: inMemoryUser.lifetime_coins || 200,
+            monthly_coins: inMemoryUser.monthly_coins || 200,
+            balance_bdt: Number(inMemoryUser.balance_bdt) || 0
+          },
+          token
+        });
+      }
 
       // Fetch user profile from Supabase
       const { data: users, error: selectError } = await supabase
@@ -812,6 +932,36 @@ async function startServer() {
         createdAt: new Date().toISOString()
       };
 
+      if (!isSupabaseConfigured) {
+        // Fallback report save in-memory
+        const inMemoryReport = {
+          id: "rep-" + Date.now(),
+          reportMonth: reportObject.reportMonth,
+          totalCoins: reportObject.totalCoins,
+          poolAmount: reportObject.poolAmount,
+          distributionDetails: JSON.parse(reportObject.distributionDetails),
+          createdAt: reportObject.createdAt
+        };
+        fallbackReports.unshift(inMemoryReport);
+
+        // Update users in fallback
+        for (const w of updatedWriters) {
+          const userIndex = fallbackUsers.findIndex(u => u.username === w.username);
+          if (userIndex !== -1) {
+            fallbackUsers[userIndex].balance_bdt = w.balance_bdt;
+            fallbackUsers[userIndex].monthly_coins = 0;
+            fallbackUsers[userIndex].coins = 0;
+          }
+        }
+
+        return res.json({
+          success: true,
+          message: "মাসিক ক্লোজিং সফলভাবে সম্পন্ন হয়েছে (In-Memory Fallback)!",
+          report: inMemoryReport,
+          updatedWriters
+        });
+      }
+
       // Save report to database table 'closing_reports'
       const { data: insertedReports, error: reportError } = await supabase
         .from("closing_reports")
@@ -898,6 +1048,9 @@ async function startServer() {
   // 6. GET /api/admin/closing-reports
   app.get("/api/admin/closing-reports", async (req, res) => {
     try {
+      if (!isSupabaseConfigured) {
+        return res.json(fallbackReports);
+      }
       const { data, error } = await supabase
         .from("closing_reports")
         .select("*")
