@@ -573,6 +573,24 @@ export default function App() {
       if (prev.some(i => i.articleId === item.articleId)) return prev;
       return [...prev, item];
     });
+    // Increment printCount of the article
+    setArticles(prev => {
+      const updated = prev.map(art => {
+        if (art.id === item.articleId) {
+          const currentPrintCount = art.printCount ?? (Math.floor(art.reads / 8) + 2);
+          const currentEarnedCoins = art.earnedCoins ?? ((art.requiredCoins || 0) * Math.floor(art.reads * 0.4));
+          return {
+            ...art,
+            printCount: currentPrintCount + 1,
+            // also let's make sure earnedCoins increases if the article has a coin cost!
+            earnedCoins: (art.requiredCoins || 0) > 0 ? currentEarnedCoins + (art.requiredCoins || 0) : currentEarnedCoins
+          };
+        }
+        return art;
+      });
+      localStorage.setItem('r2p_articles', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleRemoveFromCart = (id: string) => {
@@ -748,6 +766,7 @@ export default function App() {
                 setLoggedInReader={setLoggedInReader}
                 payoutRequests={payoutRequests}
                 onSubmitPayoutRequest={handleSubmitPayoutRequest}
+                orders={orders}
               />
             )}
 

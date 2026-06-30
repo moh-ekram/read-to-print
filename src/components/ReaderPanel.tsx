@@ -92,6 +92,7 @@ interface ReaderPanelProps {
   setLoggedInReader?: React.Dispatch<React.SetStateAction<ReaderUser | null>>;
   payoutRequests?: PayoutRequest[];
   onSubmitPayoutRequest?: (amount: number, method: 'bkash' | 'nagad' | 'rocket', account: string) => void;
+  orders?: Order[];
 }
 
 interface WriterWithScore extends Writer {
@@ -173,13 +174,28 @@ export default function ReaderPanel({
   loggedInReader,
   setLoggedInReader,
   payoutRequests = [],
-  onSubmitPayoutRequest
+  onSubmitPayoutRequest,
+  orders = []
 }: ReaderPanelProps) {
   const [activeTab, setActiveTab] = useState<'discover' | 'my-profile' | 'shelf' | 'print-cart' | 'coin-store' | 'author-profiles' | 'become-writer'>('discover');
   const [authorsSubTab, setAuthorsSubTab] = useState<'list' | 'chart'>('list');
   const [selectedAuthorForProfile, setSelectedAuthorForProfile] = useState<Writer | null>(null);
   const [viewingArticle, setViewingArticle] = useState<Article | null>(null);
   const [readingScrollProgress, setReadingScrollProgress] = useState(0);
+
+  // Profile-specific Redesign States
+  const [profileMode, setProfileMode] = useState<'reader' | 'writer'>('reader');
+  const [followingWriterIds, setFollowingWriterIds] = useState<string[]>(['writer-1', 'writer-2']);
+  const [showCoinHistoryModal, setShowCoinHistoryModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [coinTransactions, setCoinTransactions] = useState([
+    { id: 'tx-1', date: '2026-06-30', description: 'বিজ্ঞান ও আধুনিক প্রযুক্তি প্রবন্ধ আনলক', amount: -15, type: 'unlock' },
+    { id: 'tx-2', date: '2026-06-29', description: 'লেখক আবদুল্লাহ আল মামুন-কে উপহার', amount: -20, type: 'gift' },
+    { id: 'tx-3', date: '2026-06-28', description: 'কাব্য সংকলন প্রবন্ধ আনলক', amount: -10, type: 'unlock' },
+    { id: 'tx-4', date: '2026-06-25', description: 'কয়েন প্যাক রিচার্জ (সিলভার কার্ড)', amount: +100, type: 'recharge' },
+    { id: 'tx-5', date: '2026-06-24', description: 'ইতিহাস ও ঐতিহ্য প্রবন্ধ আনলক', amount: -12, type: 'unlock' },
+    { id: 'tx-6', date: '2026-06-20', description: 'লেখক সুফিয়া কামাল-কে উপহার', amount: -50, type: 'gift' },
+  ]);
 
   // User login/registration auth inputs state
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -909,7 +925,10 @@ export default function ReaderPanel({
                               </div>
                               
                               {/* Save & Bookmarking */}
-                              <div className="flex gap-1">
+                              <div className="flex gap-1 items-center">
+                                <span className="inline-flex items-center gap-0.5 text-xs bg-amber-50 text-amber-700 font-bold border border-amber-200/50 px-2 py-0.5 rounded-md select-none shrink-0" title="প্রয়োজনীয় কয়েন">
+                                  🪙 <span className="font-digits">{art.requiredCoins || 0}</span>
+                                </span>
                                 <button
                                   onClick={() => handleToggleReadLater(art.id)}
                                   className={`p-1.5 rounded-md transition-all ${
@@ -933,12 +952,9 @@ export default function ReaderPanel({
 
                             <h3 
                               onClick={() => setViewingArticle(art)}
-                              className="font-bold text-neutral-900 text-lg group-hover:text-indigo-600 transition-colors cursor-pointer leading-snug flex items-center justify-between gap-1.5 flex-wrap font-serif"
+                              className="font-bold text-neutral-900 text-lg group-hover:text-indigo-600 transition-colors cursor-pointer leading-snug font-serif"
                             >
-                              <span>{art.title}</span>
-                              <span className="inline-flex items-center gap-0.5 text-xs bg-neutral-100/80 text-neutral-800 font-bold px-2 py-0.5 rounded-md shrink-0 select-none" title="প্রয়োজনীয় কয়েন">
-                                🪙 <span className="font-digits">{art.requiredCoins || 0}</span>
-                              </span>
+                              {art.title}
                             </h3>
 
                             <div 
@@ -1421,7 +1437,7 @@ export default function ReaderPanel({
                                 onChange={() => setDeliveryRegion('Outside Dhaka')}
                                 className="text-indigo-600 focus:ring-indigo-500"
                               />
-                              ঢাকার বাইরে সমগ্র বাংলাদেশ (ডেলিভারি চার্জ: ১২০ টাকা)
+                              ঢাকার বাইরে সমগ্র বাংলাদেশ (ডেলিভারি চার্জ: ১২ো টাকা)
                             </label>
                           </div>
                         </div>
@@ -1453,24 +1469,25 @@ export default function ReaderPanel({
                             </label>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex justify-between items-center pt-3 border-t border-gray-50">
-                        <button
-                          type="button"
-                          onClick={() => setCheckoutStep('cart')}
-                          className="px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold"
-                        >
-                          কার্টে ফিরে যান
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleInstantCheckoutStart}
-                          className="px-5 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-xs font-bold flex items-center gap-1"
-                        >
-                          পেমেন্ট সম্পন্ন করার ধাপে যান
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex justify-between items-center pt-3 border-t border-gray-50">
+                          <button
+                            type="button"
+                            onClick={() => setCheckoutStep('cart')}
+                            className="px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold"
+                          >
+                            কার্টে ফিরে যান
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleInstantCheckoutStart}
+                            disabled={!agreedToTerms}
+                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                          >
+                            পেমেন্ট অপশনে যান
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1586,7 +1603,7 @@ export default function ReaderPanel({
                               <button
                                 type="submit"
                                 disabled={isPaying}
-                                className="w-full py-2.5 bg-stone-900 text-stone-100 hover:bg-stone-950 rounded-lg text-xs font-bold transition-all mt-2 cursor-pointer flex items-center justify-center gap-2"
+                                className="w-full py-2.5 bg-stone-900 text-stone-100 hover:bg-stone-95px rounded-lg text-xs font-bold transition-all mt-2 cursor-pointer flex items-center justify-center gap-2"
                               >
                                 {isPaying ? (
                                   <>
@@ -1631,13 +1648,13 @@ export default function ReaderPanel({
                                       maxLength={11}
                                       value={simPhoneNumber}
                                       onChange={(e) => setSimPhoneNumber(e.target.value)}
-                                      placeholder="مثلاً 017XXXXXXXX"
-                                      className="w-full p-2.5 text-sm text-center border border-gray-200 rounded-lg font-mono focus:ring-1 focus:ring-emerald-550 focus:outline-hidden"
+                                      placeholder="01XXXXXXXXX"
+                                      className="w-full p-2.5 text-sm text-center border border-gray-200 rounded-lg font-mono focus:ring-1 focus:ring-emerald-500 focus:outline-hidden"
                                     />
                                   </div>
                                   <button
                                     type="submit"
-                                    className={`w-full py-2.5 text-white rounded-lg text-xs font-bold transition-all ${
+                                    className={`w-full py-2.5 text-white rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                       paymentMethod === 'bkash' ? 'bg-pink-600 hover:bg-pink-700' : 'bg-orange-600 hover:bg-orange-700'
                                     }`}
                                   >
@@ -1664,11 +1681,12 @@ export default function ReaderPanel({
                                       maxLength={4}
                                       value={simOTP}
                                       onChange={(e) => setSimOTP(e.target.value)}
+                                      className="w-full p-2.5 text-sm text-center border border-gray-200 rounded-lg font-mono focus:ring-1 focus:ring-emerald-500 focus:outline-hidden"
                                     />
                                   </div>
                                   <button
                                     type="submit"
-                                    className={`w-full py-2.5 text-white rounded-lg text-xs font-bold transition-all ${
+                                    className={`w-full py-2.5 text-white rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                       paymentMethod === 'bkash' ? 'bg-pink-600 hover:bg-pink-700' : 'bg-orange-600 hover:bg-orange-700'
                                     }`}
                                   >
@@ -1681,9 +1699,9 @@ export default function ReaderPanel({
                                 <div className="space-y-3">
                                   <div className="text-center">
                                     <p className="text-[11px] text-gray-500 leading-relaxed font-semibold">
-                                      আপনার ${paymentMethod === 'bkash' ? 'বিকাশ' : 'নগদ'} অ্যাকাউন্টের গোপন পিন নম্বর দিন
+                                      আপনার {paymentMethod === 'bkash' ? 'বিকাশ' : 'নগদ'} অ্যাকাউন্টের গোপন পিন নম্বর দিন
                                     </p>
-                                    <p className="text-[10px] text-red-500 mt-0.5">গোপনীয়তা নোট: এটি একটি সুরক্ষিত মক পেমেন্ট গেটওয়ে কোড। টেস্ট করতে যেকোনো ৪ সংখ্যা দিতে পারেন।</p>
+                                    <p className="text-[10px] text-red-500 mt-0.5">গোপনীয়তা নোট: টেস্ট করতে যেকোনো ৪ সংখ্যা দিতে পারেন।</p>
                                   </div>
                                   <div className="space-y-1">
                                     <input
@@ -1699,7 +1717,7 @@ export default function ReaderPanel({
                                   <button
                                     type="submit"
                                     disabled={isPaying}
-                                    className={`w-full py-2.5 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                                    className={`w-full py-2.5 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
                                       paymentMethod === 'bkash' ? 'bg-pink-600 hover:bg-pink-700' : 'bg-orange-600 hover:bg-orange-700'
                                     }`}
                                   >
@@ -1763,11 +1781,11 @@ export default function ReaderPanel({
                             <span>পৃষ্ঠা খরচ (মোট পাতা × ১.৫ টাকা):</span>
                             <span className="font-mono text-gray-700">{pageCost.toFixed(1)} ৳</span>
                           </div>
-                          <div className="flex justify-between items-center text-xs text-gray-600">
+                          <div className="flex justify-between items-center text-xs text-gray-650">
                             <span>বাইন্ডিং চার্জ (ফিক্সড):</span>
                             <span className="font-mono text-gray-700">{bindingCost.toFixed(1)} ৳</span>
                           </div>
-                          <div className="flex justify-between items-center text-xs text-gray-600">
+                          <div className="flex justify-between items-center text-xs text-gray-650">
                             <span>ডেলিভারি চার্জ ({deliveryRegion === 'Dhaka' ? 'ঢাকা' : 'ঢাকার বাইরে'}):</span>
                             <span className="font-mono text-gray-700">{deliveryCost.toFixed(1)} ৳</span>
                           </div>
@@ -1777,16 +1795,6 @@ export default function ReaderPanel({
                           <span>সর্বমোট খরচ (Grand Total):</span>
                           <span className="text-emerald-700 font-mono text-base">{grandTotal.toFixed(1)} ৳</span>
                         </div>
-
-                        {checkoutStep === 'cart' && (
-                          <button
-                            onClick={() => setCheckoutStep('shipping')}
-                            className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5"
-                          >
-                            পরবর্তী ধাপে যান (শিপিং ঠিকানা)
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        )}
                       </div>
                     )}
                   </div>
@@ -1817,10 +1825,6 @@ export default function ReaderPanel({
                   <p className="flex justify-between"><b>পেমেন্ট মাধ্যম:</b> <span className="uppercase font-semibold">{paymentMethod} ({paymentMethod === 'card' ? 'কার্ড' : 'মোবাইল ব্যাংকিং'})</span></p>
                   <p className="flex justify-between"><b>পেমেন্ট স্ট্যাটাস:</b> <span className="text-emerald-700 font-bold">Paid</span></p>
                   <p className="flex justify-between"><b>শিপিং এলাকা:</b> <span>{deliveryRegion === 'Dhaka' ? 'ঢাকার ভিতরে' : 'ঢাকার বাইরে'}</span></p>
-                </div>
-
-                <div className="bg-amber-50/35 border border-amber-500/10 p-3 rounded-lg text-[10px] text-amber-800 leading-relaxed text-justify mt-4">
-                   💡 <b>অ্যাডমিন প্যানেল আপডেট:</b> এখন স্ক্রিনের ওপরের নেভিগেশন বার থেকে "অ্যাডমিন প্যানেল (Mngt Panel)" ট্যাব ক্লিক করে অর্ডারটির জন্য জেনারেট হওয়া <b>"প্রিন্ট-অর্ডার"</b> আপডেট করতে পারবেন।
                 </div>
 
                 <button
@@ -1973,95 +1977,175 @@ export default function ReaderPanel({
               </div>
             ) : (
               // Logged in User Profile dashboard & unified writer control pane
-              <div className="space-y-6 animate-fade-in">
-                {/* 1. Reader Profile summary card */}
-                <div id="profile-dashboard-card" className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={loggedInReader.avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(loggedInReader.username)}`}
-                        alt={loggedInReader.name}
-                        className="w-16 h-16 rounded-full object-cover border border-slate-200 p-1 bg-slate-50"
-                      />
-                      <div className="space-y-1">
-                        <h3 className="text-base font-black text-slate-900">{loggedInReader.name}</h3>
-                        <p className="text-xs text-slate-400 font-mono">@{loggedInReader.username}</p>
-                        <span className="inline-block px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold rounded-md">
-                          সংকলন পাঠক ({loggedInReader.role === 'writer' ? 'লেখক' : 'রিডার'})
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-4 items-center">
-                      {/* Interactive dynamic coin stats */}
-                      <div className="bg-amber-50 border border-amber-200/50 rounded-xl px-4 py-2 text-center shrink-0 min-w-[100px]">
-                        <p className="text-[10px] text-amber-600 font-bold tracking-tight">বর্তমান কয়েন</p>
-                        <p className="text-base font-black text-amber-700 flex items-center justify-center gap-1">
-                          <Coins className="w-4 h-4" /> {loggedInReader.currentCoins ?? 200}
-                        </p>
-                      </div>
-
-                      <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-center shrink-0 min-w-[100px]">
-                        <p className="text-[10px] text-slate-500 font-bold tracking-tight">মোট রিচার্জ</p>
-                        <p className="text-base font-black text-slate-700 font-mono">
-                          ৳{loggedInReader.spentAmount ?? 0}
-                        </p>
-                      </div>
-
-                      {/* Power action: Logout button */}
-                      <button
-                        onClick={handleLogout}
-                        className="px-4 py-2 bg-rose-50 border border-rose-100 hover:bg-rose-100/70 text-rose-600 text-xs font-bold rounded-xl self-center transition-colors shadow-2xs cursor-pointer"
-                      >
-                        লগআউট (Logout)
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100 space-y-2">
-                    <h4 className="text-xs font-bold text-slate-700">স্ব-পরিচিতি:</h4>
-                    <p className="text-xs text-slate-500 leading-relaxed italic">
-                      {loggedInReader.bio || "মুদ্রণ ও সাহিত্যপ্রেমী কলাম পাঠক।"}
-                    </p>
-                  </div>
+              <div className="space-y-6 animate-fade-in text-left">
+                {/* Profile Mode Segmented Switcher (Toggle style) */}
+                <div className="flex bg-slate-100/80 p-1 rounded-2xl border border-slate-200 max-w-sm mx-auto shadow-3xs">
+                  <button
+                    type="button"
+                    onClick={() => setProfileMode('reader')}
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      profileMode === 'reader'
+                        ? 'bg-white text-slate-950 shadow-sm border border-slate-200/40'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <User className="w-4 h-4 text-violet-500" />
+                    <span>পাঠক অংশ (Reader)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileMode('writer')}
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      profileMode === 'writer'
+                        ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/40'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <PenTool className="w-4 h-4 text-indigo-500" />
+                    <span>লেখক অংশ (Writer)</span>
+                  </button>
                 </div>
 
-                {/* 2. Unified writer section */}
-                <div className="pt-6 border-t border-slate-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-black text-slate-900 border-l-4 border-indigo-500 pl-2">
-                      লেখক নিয়ন্ত্রণ উইন্ডো (Writer Panel)
-                    </h3>
-                  </div>
+                <AnimatePresence mode="wait">
+                  {profileMode === 'reader' ? (
+                    <motion.div
+                      key="reader-part"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="space-y-6"
+                    >
+                      {/* 1. Reader Profile summary card */}
+                      <div id="profile-dashboard-card" className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                          <div className="flex items-center gap-4">
+                            <img
+                              src={loggedInReader.avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(loggedInReader.username)}`}
+                              alt={loggedInReader.name}
+                              className="w-16 h-16 rounded-full object-cover border border-slate-200 p-1 bg-slate-50"
+                            />
+                            <div className="text-left space-y-1">
+                              <h3 className="text-base font-black text-slate-900">{loggedInReader.name}</h3>
+                              <p className="text-xs text-slate-400 font-mono">@{loggedInReader.username}</p>
+                              <span className="inline-block px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold rounded-md">
+                                সংকলন পাঠক ({loggedInReader.role === 'writer' ? 'লেখক' : 'রিডার'})
+                              </span>
+                            </div>
+                          </div>
 
-                  {!currentWriter ? (
-                    <div className="bg-white p-8 rounded-2xl border border-dashed border-gray-200 text-center space-y-4 max-w-md mx-auto shadow-xs">
-                      <FileText className="w-12 h-12 text-slate-400 mx-auto animate-pulse" />
-                      <h3 className="text-sm font-bold text-gray-800">আপনি এখনও লেখক হিসেবে নিবন্ধিত নন!</h3>
-                      <p className="text-xs text-gray-500 leading-relaxed">
-                        নিজের প্রবন্ধ বা কলাম প্রকাশ করতে এবং রিডার কয়েন থেকে রয়্যালটি আয় করতে আজই লেখক হিসেবে রেজিস্ট্রেশন করুন।
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('become-writer')}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
-                      >
-                        লেখক হতে আবেদন করুন
-                      </button>
-                    </div>
+                          <div className="flex flex-wrap gap-4 items-center">
+                            {/* Interactive dynamic coin stats (Click opens ledger) */}
+                            <div 
+                              onClick={() => setShowCoinHistoryModal(true)}
+                              className="bg-amber-50 hover:bg-amber-100/70 border border-amber-200/50 rounded-xl px-4 py-2.5 text-center shrink-0 min-w-[130px] cursor-pointer transition-all shadow-3xs group"
+                              title="লেনদেন ও হিস্ট্রি দেখতে ক্লিক করুন"
+                            >
+                              <p className="text-[10px] text-amber-600 font-extrabold tracking-tight uppercase flex items-center justify-center gap-1">
+                                <span>বর্তমান কয়েন</span>
+                                <span className="text-[9px] opacity-70 group-hover:translate-x-0.5 transition-transform">🔍</span>
+                              </p>
+                              <p className="text-lg font-black text-amber-700 flex items-center justify-center gap-1 font-mono">
+                                <Coins className="w-4 h-4 text-amber-500 animate-pulse" /> {readerCoins}
+                              </p>
+                            </div>
+
+                            {/* Power action: Logout button */}
+                            <button
+                              onClick={handleLogout}
+                              className="px-4 py-2 bg-rose-50 border border-rose-100 hover:bg-rose-100/70 text-rose-600 text-xs font-bold rounded-xl self-center transition-all shadow-3xs cursor-pointer"
+                            >
+                              লগআউট (Logout)
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100 space-y-2 text-left">
+                          <h4 className="text-xs font-bold text-slate-700">স্ব-পরিচিতি:</h4>
+                          <p className="text-xs text-slate-500 leading-relaxed italic">
+                            {loggedInReader.bio || "মুদ্রণ ও সাহিত্যপ্রেমী কলাম পাঠক।"}
+                          </p>
+                        </div>
+
+                        {/* Soft, minimal colored buttons in profile box (green, orange, purple) */}
+                        <div className="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {/* 1. Basket (সবুজ - Soft Green) */}
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('print-cart')}
+                            className="py-3 px-4 bg-emerald-50 hover:bg-emerald-100/70 border border-emerald-200 text-emerald-700 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-3xs"
+                          >
+                            <ShoppingBag className="w-4 h-4 text-emerald-600" />
+                            <span>প্রিন্ট বাস্কেট ({cart.length})</span>
+                          </button>
+
+                          {/* 2. Bookmark (কমলা - Soft Orange) */}
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('shelf')}
+                            className="py-3 px-4 bg-orange-50 hover:bg-orange-100/70 border border-orange-200 text-orange-700 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-3xs"
+                          >
+                            <Bookmark className="w-4 h-4 text-orange-500" />
+                            <span>বুকমার্ক লিস্ট (Shelf)</span>
+                          </button>
+
+                          {/* 3. Following List (বেগুনি - Soft Purple) */}
+                          <button
+                            type="button"
+                            onClick={() => setShowFollowingModal(true)}
+                            className="py-3 px-4 bg-violet-50 hover:bg-violet-100/70 border border-violet-200 text-violet-700 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-3xs"
+                          >
+                            <Users className="w-4 h-4 text-violet-500" />
+                            <span>ফলোয়িং লিস্ট ({followingWriterIds.length})</span>
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
                   ) : (
-                    <WriterPanel
-                      currentWriter={currentWriter}
-                      articles={articles}
-                      onUpdateWriter={onUpdateWriter}
-                      onAddArticle={onAddArticle}
-                      onDeleteArticle={onDeleteArticle}
-                      onUpdateArticle={onUpdateArticle}
-                      payoutRequests={payoutRequests}
-                      onSubmitPayoutRequest={onSubmitPayoutRequest}
-                    />
+                    <motion.div
+                      key="writer-part"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                    >
+                      {/* Unified writer section */}
+                      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 text-left">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                          <h3 className="text-sm font-black text-slate-900 border-l-4 border-indigo-500 pl-2">
+                            লেখক নিয়ন্ত্রণ উইন্ডো (Writer Panel)
+                          </h3>
+                        </div>
+
+                        {!currentWriter ? (
+                          <div className="p-8 text-center space-y-4 max-w-md mx-auto">
+                            <FileText className="w-12 h-12 text-slate-400 mx-auto animate-pulse" />
+                            <h3 className="text-sm font-bold text-gray-800">আপনি এখনও লেখক হিসেবে নিবন্ধিত নন!</h3>
+                            <p className="text-xs text-gray-500 leading-relaxed">
+                              নিজের প্রবন্ধ বা কলাম প্রকাশ করতে এবং রিডার কয়েন থেকে রয়্যালটি আয় করতে আজই লেখক হিসেবে রেজিস্ট্রেশন করুন।
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('become-writer')}
+                              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
+                            >
+                              লেখক হতে আবেদন করুন
+                            </button>
+                          </div>
+                        ) : (
+                          <WriterPanel
+                            currentWriter={currentWriter}
+                            articles={articles}
+                            onUpdateWriter={onUpdateWriter}
+                            onAddArticle={onAddArticle}
+                            onDeleteArticle={onDeleteArticle}
+                            onUpdateArticle={onUpdateArticle}
+                            payoutRequests={payoutRequests}
+                            onSubmitPayoutRequest={onSubmitPayoutRequest}
+                          />
+                        )}
+                      </div>
+                    </motion.div>
                   )}
-                </div>
+                </AnimatePresence>
               </div>
             )}
           </motion.div>
@@ -3605,6 +3689,148 @@ export default function ReaderPanel({
               </div>
             </motion.div>
           </motion.div>
+        )}
+
+        {/* Following List Popup Overlay Modal */}
+        {showFollowingModal && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xl max-w-md w-full space-y-4 animate-fade-in"
+            >
+              <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-violet-600" />
+                  <span>আপনার অনুসরণকৃত লেখকবৃন্দ ({followingWriterIds.length} জন)</span>
+                </h3>
+                <button
+                  onClick={() => setShowFollowingModal(false)}
+                  className="text-slate-400 hover:text-slate-600 font-bold text-xs p-1"
+                >
+                  ✕ বন্ধ করুন
+                </button>
+              </div>
+
+              <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                {followingWriterIds.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic py-6 text-center">আপনি এখনো কোনো লেখককে ফলো করেননি।</p>
+                ) : (
+                  writers
+                    .filter(w => followingWriterIds.includes(w.id))
+                    .map(w => (
+                      <div key={w.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-150 rounded-xl hover:bg-slate-100/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={w.avatar}
+                            alt={w.name}
+                            className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                          />
+                          <div className="text-left">
+                            <h4 className="text-xs font-black text-slate-800">{w.name}</h4>
+                            <p className="text-[10px] text-slate-400 font-mono">@{w.username}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setShowFollowingModal(false);
+                              setSelectedAuthorForProfile(w);
+                              setActiveTab('author-profiles');
+                            }}
+                            className="px-2.5 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            প্রোফাইল
+                          </button>
+                          <button
+                            onClick={() => {
+                              setFollowingWriterIds(prev => prev.filter(id => id !== w.id));
+                              w.followers = Math.max(0, (w.followers || 1) - 1);
+                            }}
+                            className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            আনফলো
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    setShowFollowingModal(false);
+                    setActiveTab('author-profiles');
+                  }}
+                  className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl text-center block transition-colors cursor-pointer"
+                >
+                  ✨ আরও লেখক খুঁজুন ও ফলো করুন
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Coin History Popup Overlay Modal */}
+        {showCoinHistoryModal && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xl max-w-md w-full space-y-4 animate-fade-in"
+            >
+              <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                  <Coins className="w-4 h-4 text-amber-500" />
+                  <span>কয়েন ওয়ালেট লেনদেন হিস্ট্রি (ledger)</span>
+                </h3>
+                <button
+                  onClick={() => setShowCoinHistoryModal(false)}
+                  className="text-slate-400 hover:text-slate-600 font-bold text-xs p-1"
+                >
+                  ✕ বন্ধ করুন
+                </button>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex justify-between items-center">
+                <div className="text-left">
+                  <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">রিয়েল-টাইম ওয়ালেট ব্যালেন্স</p>
+                  <span className="text-xl font-black text-amber-800 font-mono">{readerCoins} 🪙</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowCoinHistoryModal(false);
+                    setActiveTab('coin-store');
+                  }}
+                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold rounded-lg transition-all shadow-xs cursor-pointer"
+                >
+                  ➕ কয়েন কিনুন (Recharge)
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-1.5 text-left">সম্প্রতি খরচ করা হিস্ট্রি (সর্বশেষ ৫-১০টি)</p>
+                {coinTransactions.map((tx) => (
+                  <div key={tx.id} className="p-2.5 bg-slate-50 border border-slate-150 rounded-xl flex justify-between items-center text-xs font-sans">
+                    <div className="space-y-0.5 text-left">
+                      <p className="font-bold text-slate-800 leading-tight">{tx.description}</p>
+                      <p className="text-[9px] text-slate-400 font-mono">{tx.date}</p>
+                    </div>
+                    <span className={`font-mono font-black text-sm shrink-0 ${
+                      tx.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
+                    }`}>
+                      {tx.amount > 0 ? `+${tx.amount}` : tx.amount}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2 text-center text-[10px] text-slate-400 flex items-center justify-center gap-1 bg-slate-50 py-2 rounded-xl">
+                💡 <span>১ কয়েন = ১ টাকা রেশিওতে লেখক ক্লোজিং বোনাস হিসাব করা হয়।</span>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

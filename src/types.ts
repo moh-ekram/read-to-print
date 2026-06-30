@@ -27,6 +27,8 @@ export interface Article {
   wordCount: number;
   requiredCoins?: number; // Coins required to unlock this article (0 or more)
   hidden?: boolean; // Whether the admin has hidden the article
+  printCount?: number; // How many times added to print
+  earnedCoins?: number; // Total coins earned by this article
 }
 
 export interface ReaderUser {
