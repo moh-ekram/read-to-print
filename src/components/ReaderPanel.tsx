@@ -2092,9 +2092,9 @@ export default function ReaderPanel({
                           <button
                             type="button"
                             onClick={() => setShowFollowingModal(true)}
-                            className="py-3 px-4 bg-violet-50 hover:bg-violet-100/70 border border-violet-200 text-violet-700 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-3xs"
+                            className="py-3 px-4 bg-purple-50 hover:bg-purple-100/70 border border-purple-200 text-purple-750 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-3xs"
                           >
-                            <Users className="w-4 h-4 text-violet-500" />
+                            <Users className="w-4 h-4 text-purple-500" />
                             <span>ফলোয়িং লিস্ট ({followingWriterIds.length})</span>
                           </button>
                         </div>
@@ -2150,6 +2150,7 @@ export default function ReaderPanel({
             )}
           </motion.div>
         )}
+
         {/* TAB 5: Author Profiles */}
         {activeTab === 'author-profiles' && (
           <motion.div
@@ -2157,7 +2158,7 @@ export default function ReaderPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-6"
+            className="space-y-6 animate-fade-in"
           >
             {selectedAuthorForProfile ? (
               // Detailed Author view
@@ -2239,8 +2240,8 @@ export default function ReaderPanel({
                                   🪙 {post.requiredCoins || 0}
                                 </span>
                               </h4>
-                              <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-mono">
-                                <span>{post.wordCount} শব্দ</span>
+                              <div className="flex items-center gap-2 text-[10px] text-gray-400 font-mono">
+                                <span>{post.createdAt}</span>
                                 <span className="text-slate-200">|</span>
                                 <span className="text-indigo-600/85 font-semibold flex items-center gap-0.5 bg-indigo-50 px-1 py-0.2 rounded-sm" title="মোট পঠন সংখ্যা">
                                   👁️ {post.reads || 0} বার

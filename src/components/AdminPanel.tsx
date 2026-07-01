@@ -288,75 +288,82 @@ export default function AdminPanel({
                 <p className="text-sm mt-3">এখনো কোনো কাস্টম প্রিন্ট অর্ডারের তথ্য নেই।</p>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-xs">
+              <div className="bg-white rounded-2xl border border-neutral-200/85 overflow-hidden shadow-3xs">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-gray-50 text-gray-600 text-xs font-bold border-b border-gray-100">
-                        <th className="p-4">অর্ডার আইডি</th>
-                        <th className="p-4">গ্রাহক ও যোগাযোগ</th>
-                        <th className="p-4">বইয়ের বিবরণ</th>
-                        <th className="p-4">মূল্য হিসাব</th>
-                        <th className="p-4">প্রিন্টিং স্ট্যাটাস</th>
-                        <th className="p-4 text-center">ইনভয়েস ও মক পিডিএফ</th>
+                      <tr className="bg-[#fafaf9] border-b border-neutral-150 text-[10px] uppercase tracking-wider font-bold font-mono text-neutral-500">
+                        <th className="px-5 py-3.5">অর্ডার আইডি</th>
+                        <th className="px-5 py-3.5">গ্রাহক ও যোগাযোগ</th>
+                        <th className="px-5 py-3.5">বইয়ের বিবরণ</th>
+                        <th className="px-5 py-3.5">মূল্য হিসাব</th>
+                        <th className="px-5 py-3.5">প্রিন্টিং স্ট্যাটাস</th>
+                        <th className="px-5 py-3.5 text-center">ইনভয়েস ও মক পিডিএফ</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50 text-xs">
+                    <tbody className="divide-y divide-neutral-100 text-xs">
                       {orders.map((ord) => (
-                        <tr key={ord.id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="p-4 font-mono font-bold text-gray-950">{ord.id}</td>
-                          <td className="p-4 space-y-0.5">
-                            <p className="font-bold text-gray-800">{ord.customerName}</p>
-                            <p className="text-[11px] text-gray-500 flex items-center gap-1 font-mono">
-                              <Phone className="w-3 h-3" /> {ord.phone}
+                        <tr key={ord.id} className="hover:bg-neutral-50/60 transition-colors duration-150">
+                          <td className="px-5 py-4">
+                            <span className="font-mono font-bold text-purple-750 bg-purple-50 border border-purple-150/40 px-2 py-0.5 rounded-md text-[10px]">
+                              {ord.id}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 space-y-0.5">
+                            <p className="font-bold text-neutral-800 text-[12px]">{ord.customerName}</p>
+                            <p className="text-[11px] text-neutral-500 flex items-center gap-1 font-mono">
+                              <Phone className="w-3 h-3 text-neutral-400" /> {ord.phone}
                             </p>
-                            <p className="text-[10px] text-gray-400 flex items-center gap-1 max-w-[180px] truncate" title={ord.address}>
-                              <MapPin className="w-3 h-3 shrink-0" /> {ord.address} ({ord.city === 'Dhaka' ? 'ঢাকা' : 'ঢাকার বাইরে'})
+                            <p className="text-[10px] text-neutral-400 flex items-center gap-1 max-w-[180px] truncate" title={ord.address}>
+                              <MapPin className="w-3 h-3 shrink-0 text-neutral-400" /> {ord.address} ({ord.city === 'Dhaka' ? 'ঢাকা' : 'ঢাকার বাইরে'})
                             </p>
                           </td>
-                          <td className="p-4">
-                            <p className="font-bold text-gray-800">কাস্টম বুকলেট</p>
-                            <span className="text-[10px] bg-indigo-50 text-indigo-800 px-1.5 py-0.2 rounded-full font-mono">
+                          <td className="px-5 py-4">
+                            <p className="font-bold text-neutral-850">কাস্টম বুকলেট</p>
+                            <span className="inline-block text-[10px] bg-purple-50 text-purple-850 px-1.5 py-0.5 rounded font-mono mt-1 border border-purple-100/50">
                               {ord.totalPages} পৃষ্ঠা (A4)
                             </span>
-                            <div className="text-[10px] text-gray-400 mt-1 lines-clamp-1 max-w-[180px]">
+                            <div className="text-[10px] text-neutral-450 mt-1.5 line-clamp-1 max-w-[180px]" title={ord.cartItems.map(c => c.articleTitle).join(', ')}>
                               আর্টিকেল: {ord.cartItems.map(c => c.articleTitle).join(', ')}
                             </div>
                           </td>
-                          <td className="p-4">
-                            <p className="font-semibold text-indigo-700 font-mono">{ord.totalCost.toFixed(1)} ৳</p>
-                            <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
-                              ord.paymentStatus === 'paid' ? 'bg-indigo-50 text-indigo-800' : 'bg-red-50 text-red-800'
+                          <td className="px-5 py-4">
+                            <p className="font-semibold text-purple-700 font-mono text-sm">{ord.totalCost.toFixed(1)} ৳</p>
+                            <span className={`inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full font-bold mt-1.5 border ${
+                              ord.paymentStatus === 'paid' 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-150/50' 
+                                : 'bg-rose-50 text-rose-700 border-rose-150/50'
                             }`}>
-                              {ord.paymentStatus === 'paid' ? 'Paid (পরিশোধিত)' : 'Unpaid'}
+                              <span className={`w-1 h-1 rounded-full ${ord.paymentStatus === 'paid' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                              {ord.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
                             </span>
                           </td>
-                          <td className="p-4">
+                          <td className="px-5 py-4">
                             <select
                               value={ord.status}
                               onChange={(e) => onUpdateOrderStatus(ord.id, e.target.value as any)}
-                              className={`p-1 px-2 border rounded-full text-[11px] font-bold ${getOrderStatusBadge(ord.status)}`}
+                              className={`p-1 px-2.5 border rounded-full text-[11px] font-bold cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-purple-200 ${getOrderStatusBadge(ord.status)}`}
                             >
-                              <option value="Received">Received (অর্ডার প্রাপ্ত)</option>
+                              <option value="Received">Received (প্রাপ্ত)</option>
                               <option value="Printing">Printing (মুদ্রণাধীন)</option>
-                              <option value="Shipped">Shipped (ডেলিভারিতে পাঠানো হয়েছে)</option>
-                              <option value="Delivered">Delivered (ডেলিভারি সম্পন্ন)</option>
+                              <option value="Shipped">Shipped (পাঠানো হয়েছে)</option>
+                              <option value="Delivered">Delivered (সম্পন্ন)</option>
                             </select>
                           </td>
-                          <td className="p-4 text-center">
-                            <div className="flex items-center justify-center gap-1">
+                          <td className="px-5 py-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => setIsPreviewingPrintReadyBook(ord)}
-                                className="p-1 px-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-[10px] font-bold flex items-center gap-1 transition-all shadow-sm shadow-indigo-100"
+                                className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100/85 text-purple-750 border border-purple-200/60 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all duration-150"
                                 title="প্রিন্ট প্রিভিউ দেখুন"
                               >
                                 <Eye className="w-3.5 h-3.5" />
-                                প্রিন্ট রেডি কভার ও বই প্রিভিউ
+                                কভার ও বই প্রিভিউ
                               </button>
                               
                               <button
                                 onClick={() => handleDownloadSimulation(ord)}
-                                className="p-1.5 rounded-md hover:bg-gray-150 text-gray-500 hover:text-gray-800"
+                                className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-neutral-850 transition-colors"
                                 title="প্রিন্ট-রেডি পিডিএফ ডাউনলোড করুন"
                               >
                                 <Download className="w-3.5 h-3.5" />
@@ -410,49 +417,50 @@ export default function AdminPanel({
               <span className="text-[10px] text-slate-400 font-bold font-mono">মোট রচনা: {articles.length} টি</span>
             </div>
 
-            <div className="overflow-x-auto bg-white border border-slate-200 rounded-xl shadow-4xs">
-              <table id="admin-moderation-table" className="min-w-full divide-y divide-slate-150 text-left text-xs font-sans">
-                <thead className="bg-slate-50 font-black text-slate-700">
+            <div className="overflow-x-auto bg-white border border-neutral-200/85 rounded-2xl shadow-3xs">
+              <table id="admin-moderation-table" className="min-w-full divide-y divide-neutral-100 text-left text-xs font-sans">
+                <thead className="bg-[#fafaf9] border-b border-neutral-150 text-[10px] uppercase tracking-wider font-bold font-mono text-neutral-500">
                   <tr>
-                    <th className="px-4 py-3 text-center w-12">#</th>
-                    <th className="px-4 py-3">টাইটেল ও ক্যাটাগরি</th>
-                    <th className="px-4 py-3">লেখক</th>
-                    <th className="px-4 py-3 text-center">শব্দ</th>
-                    <th className="px-4 py-3 text-center">পঠিত</th>
-                    <th className="px-4 py-3 text-center">কয়েন</th>
-                    <th className="px-4 py-3 text-center">অবস্থা</th>
-                    <th className="px-4 py-3 text-center">অ্যাকশন</th>
+                    <th className="px-5 py-3.5 text-center w-12">#</th>
+                    <th className="px-5 py-3.5">টাইটেল ও ক্যাটাগরি</th>
+                    <th className="px-5 py-3.5">লেখক</th>
+                    <th className="px-5 py-3.5 text-center">শব্দ</th>
+                    <th className="px-5 py-3.5 text-center">পঠিত</th>
+                    <th className="px-5 py-3.5 text-center">কয়েন</th>
+                    <th className="px-5 py-3.5 text-center">অবস্থা</th>
+                    <th className="px-5 py-3.5 text-center">অ্যাকশন</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
+                <tbody className="divide-y divide-neutral-100 bg-white">
                   {articles.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-slate-400 italic">
+                      <td colSpan={8} className="px-5 py-12 text-center text-neutral-400 italic">
                         কোনো প্রবন্ধ পোস্ট পাওয়া যায়নি।
                       </td>
                     </tr>
                   ) : (
                     articles.map((art, idx) => (
-                      <tr key={art.id} className="hover:bg-slate-50/40 transition-colors">
-                        <td className="px-4 py-3 text-center font-mono text-slate-400 font-bold">{idx + 1}</td>
-                        <td className="px-4 py-3">
-                          <div className="font-bold text-slate-800 line-clamp-1">{art.title}</div>
-                          <div className="text-[10px] text-slate-400 font-semibold">{art.category} • {art.subCategory}</div>
+                      <tr key={art.id} className="hover:bg-neutral-50/60 transition-colors duration-150">
+                        <td className="px-5 py-4 text-center font-mono text-neutral-400 font-bold">{idx + 1}</td>
+                        <td className="px-5 py-4">
+                          <div className="font-bold text-neutral-850 line-clamp-1 text-[12px]">{art.title}</div>
+                          <div className="text-[10px] text-neutral-450 font-semibold mt-0.5">{art.category} • {art.subCategory}</div>
                         </td>
-                        <td className="px-4 py-3 text-slate-700 font-semibold">{art.writerName}</td>
-                        <td className="px-4 py-3 text-center font-mono text-slate-500">{art.wordCount}</td>
-                        <td className="px-4 py-3 text-center font-mono text-slate-650">{art.reads || 0}</td>
-                        <td className="px-4 py-3 text-center font-mono font-bold text-amber-600">{art.requiredCoins || 0}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold ${
+                        <td className="px-5 py-4 text-neutral-700 font-bold">{art.writerName}</td>
+                        <td className="px-5 py-4 text-center font-mono text-neutral-500">{art.wordCount}</td>
+                        <td className="px-5 py-4 text-center font-mono text-neutral-600">{art.reads || 0}</td>
+                        <td className="px-5 py-4 text-center font-mono font-bold text-amber-600">🪙 {art.requiredCoins || 0}</td>
+                        <td className="px-5 py-4 text-center">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
                             art.hidden 
-                              ? 'bg-rose-50 text-rose-650 border border-rose-100' 
-                              : 'bg-emerald-50 text-emerald-650 border border-emerald-100'
+                              ? 'bg-rose-50 text-rose-700 border-rose-150/50' 
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-150/50'
                           }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${art.hidden ? 'bg-rose-500' : 'bg-emerald-500'}`} />
                             {art.hidden ? 'লুকায়িত' : 'প্রকাশিত'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center space-x-2 whitespace-nowrap">
+                        <td className="px-5 py-4 text-center space-x-2 whitespace-nowrap">
                           {onUpdateArticle && (
                             <button
                               type="button"
@@ -460,10 +468,10 @@ export default function AdminPanel({
                                 onUpdateArticle(art.id, { hidden: !art.hidden });
                                 alert(art.hidden ? 'আর্টিকেলটি সফলভাবে সাধারণ পাঠকদের জন্য দৃশ্যমান করা হয়েছে।' : 'আর্টিকেলটি সাধারণ ফিড ও অনুসন্ধান থেকে সফলভাবে হাইড বা লুকানো হয়েছে।');
                               }}
-                              className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
+                              className={`px-2.5 py-1.5 text-[10px] font-bold rounded-lg border transition-all duration-150 ${
                                 art.hidden 
-                                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700' 
-                                  : 'bg-amber-50 hover:bg-amber-100 text-amber-700'
+                                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200/55' 
+                                  : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200/55'
                               }`}
                             >
                               {art.hidden ? 'আনহাইড' : 'হাইড করুন'}
@@ -476,7 +484,7 @@ export default function AdminPanel({
                                 onDeleteArticle(art.id);
                               }
                             }}
-                            className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-650 font-bold rounded-md text-[10px] transition-all"
+                            className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/55 font-bold rounded-lg text-[10px] transition-all duration-150"
                           >
                             ডিলিট
                           </button>
@@ -812,29 +820,29 @@ export default function AdminPanel({
                 )}
 
                 {/* Writers Spreadsheet-like Table */}
-                <div className="overflow-x-auto bg-white border border-slate-200 rounded-xl shadow-4xs">
-                  <table id="admin-writers-table" className="min-w-full divide-y divide-slate-100 text-left text-xs font-sans">
-                    <thead className="bg-slate-50 font-black text-slate-700">
+                <div className="overflow-x-auto bg-white border border-neutral-200/85 rounded-2xl shadow-3xs">
+                  <table id="admin-writers-table" className="min-w-full divide-y divide-neutral-100 text-left text-xs font-sans">
+                    <thead className="bg-[#fafaf9] border-b border-neutral-150 text-[10px] uppercase tracking-wider font-bold font-mono text-neutral-500">
                       <tr>
-                        <th className="px-4 py-2.5 text-center w-12 border-r border-slate-100">#</th>
-                        <th className="px-4 py-2.5 border-r border-slate-100">নাম</th>
-                        <th className="px-4 py-2.5 border-r border-slate-100">ইউজারনেম</th>
-                        <th className="px-4 py-2.5 text-center border-r border-slate-100">প্রকাশনা</th>
-                        <th className="px-4 py-2.5 text-center border-r border-slate-100">অনুসারী</th>
-                        <th className="px-4 py-2.5 text-center border-r border-slate-100 text-slate-500">লাইফটাইম কয়েন</th>
-                        <th className="px-4 py-2.5 text-center border-r border-slate-100 text-amber-600">চলতি মাসের কয়েন</th>
-                        <th className="px-4 py-2.5 text-center border-r border-slate-100 text-emerald-600">ব্যালেন্স (BDT)</th>
-                        <th className="px-4 py-2.5 text-center">বিশদ</th>
+                        <th className="px-5 py-3.5 text-center w-12">#</th>
+                        <th className="px-5 py-3.5">নাম</th>
+                        <th className="px-5 py-3.5">ইউজারনেম</th>
+                        <th className="px-5 py-3.5 text-center">প্রকাশনা</th>
+                        <th className="px-5 py-3.5 text-center">অনুসারী</th>
+                        <th className="px-5 py-3.5 text-center text-neutral-450">লাইফটাইম কয়েন</th>
+                        <th className="px-5 py-3.5 text-center text-amber-600">চলতি মাসের কয়েন</th>
+                        <th className="px-5 py-3.5 text-center text-emerald-600">ব্যালেন্স (BDT)</th>
+                        <th className="px-5 py-3.5 text-center">বিশদ</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
+                    <tbody className="divide-y divide-neutral-100 bg-white">
                       {(() => {
                         const writersWithStats = writers.map((w) => {
                           const totalPubs = articles.filter(a => a.writerId === w.id).length;
                           // Sum up all coins of each writer's articles to calculate lifetime_coins dynamically
                           const articleCoins = articles
-                            .filter(a => a.writerId === w.id)
-                            .reduce((sum, a) => sum + (Number((a as any).coins) || Number(a.requiredCoins) || 0), 0);
+                             .filter(a => a.writerId === w.id)
+                             .reduce((sum, a) => sum + (Number((a as any).coins) || Number(a.requiredCoins) || 0), 0);
                           const coins = articleCoins;
                           const monthlyCoins = w.monthly_coins !== undefined ? w.monthly_coins : (w.coinBalance || 0);
                           const balanceBdt = w.balance_bdt || 0;
@@ -857,7 +865,7 @@ export default function AdminPanel({
                         if (filteredWritersForAdmin.length === 0) {
                           return (
                             <tr>
-                              <td colSpan={9} className="px-4 py-12 text-center text-slate-400 italic">
+                              <td colSpan={9} className="px-5 py-12 text-center text-neutral-400 italic">
                                 কোনো লেখক অ্যাকাউন্ট মিল পাওয়া যায়নি।
                               </td>
                             </tr>
@@ -868,54 +876,54 @@ export default function AdminPanel({
                           <tr 
                             key={w.id} 
                             onClick={() => setSelectedUserDetailInAdmin({ type: 'writer', data: w })}
-                            className="hover:bg-indigo-50/20 transition-colors cursor-pointer"
+                            className="hover:bg-neutral-50/60 transition-colors cursor-pointer duration-150"
                           >
-                            <td className="px-4 py-2 text-center font-mono text-slate-400 font-bold border-r border-slate-100">
+                            <td className="px-5 py-3.5 text-center font-mono text-neutral-400 font-bold">
                               {index + 1}
                             </td>
-                            <td className="px-4 py-2 font-extrabold text-slate-800 border-r border-slate-100">
-                              <div className="flex items-center gap-2">
-                                <img src={w.avatar} alt="" className="w-5.5 h-5.5 rounded-full object-cover border border-slate-100" />
+                            <td className="px-5 py-3.5 font-bold text-neutral-800">
+                              <div className="flex items-center gap-3">
+                                <img src={w.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-neutral-200/50 shadow-3xs shrink-0" />
                                 <div className="flex flex-col">
-                                  <span>{w.name}</span>
-                                  <span className={`inline-block w-fit px-1.5 py-0.5 text-[8px] font-black uppercase rounded-sm border mt-0.5 ${
+                                  <span className="text-[12px]">{w.name}</span>
+                                  <span className={`inline-flex items-center w-fit px-2 py-0.5 text-[8px] font-extrabold uppercase rounded-full mt-1 border ${
                                     w.coins >= 150 
-                                      ? 'bg-amber-100 text-amber-800 border-amber-300' 
+                                      ? 'bg-amber-50 text-amber-700 border-amber-200/50' 
                                       : w.coins >= 50 
-                                        ? 'bg-slate-100 text-slate-700 border-slate-300' 
-                                        : 'bg-orange-50 text-orange-700 border-orange-200'
+                                        ? 'bg-slate-50 text-slate-700 border-slate-200/50' 
+                                        : 'bg-orange-50 text-orange-700 border-orange-200/50'
                                   }`}>
                                     {w.coins >= 150 ? '🥇 গোল্ড লেখক' : w.coins >= 50 ? '🥈 সিলভার লেখক' : '🥉 ব্রোঞ্জ লেখক'}
                                   </span>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-4 py-2 font-mono text-slate-600 border-r border-slate-100">
+                            <td className="px-5 py-3.5 font-mono text-neutral-500">
                               @{w.username}
                             </td>
-                            <td className="px-4 py-2 text-center font-mono text-slate-700 border-r border-slate-100">
+                            <td className="px-5 py-3.5 text-center font-mono text-neutral-700 font-medium">
                               {w.totalPubs}
                             </td>
-                            <td className="px-4 py-2 text-center font-mono text-slate-700 border-r border-slate-100">
+                            <td className="px-5 py-3.5 text-center font-mono text-neutral-700 font-medium">
                               {w.followers}
                             </td>
-                            <td className="px-4 py-2 text-center font-mono text-slate-500 font-bold border-r border-slate-100">
+                            <td className="px-5 py-3.5 text-center font-mono text-neutral-500 font-bold">
                               {w.coins}
                             </td>
-                            <td className="px-4 py-2 text-center font-mono text-amber-600 font-bold border-r border-slate-100">
+                            <td className="px-5 py-3.5 text-center font-mono text-amber-600 font-bold">
                               {w.monthlyCoins}
                             </td>
-                            <td className="px-4 py-2 text-center font-mono text-emerald-650 font-bold border-r border-slate-100">
+                            <td className="px-5 py-3.5 text-center font-mono text-emerald-650 font-bold">
                               ৳{w.balanceBdt.toFixed(1)}
                             </td>
-                            <td className="px-4 py-2 text-center">
+                            <td className="px-5 py-3.5 text-center">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedUserDetailInAdmin({ type: 'writer', data: w });
                                 }}
-                                className="px-2 py-0.5 text-[10px] font-bold text-indigo-600 hover:underline"
+                                className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/60 rounded-lg text-[10px] font-bold transition-all duration-150"
                               >
                                 প্রোফাইল
                               </button>
@@ -930,21 +938,21 @@ export default function AdminPanel({
             ) : (
               <div className="space-y-4">
                 {/* Readers Spreadsheet-like Table */}
-                <div className="overflow-x-auto bg-white border border-slate-200 rounded-xl shadow-4xs">
-                  <table id="admin-readers-table" className="min-w-full divide-y divide-slate-100 text-left text-xs font-sans">
-                    <thead className="bg-slate-50 font-black text-slate-700">
+                <div className="overflow-x-auto bg-white border border-neutral-200/85 rounded-2xl shadow-3xs">
+                  <table id="admin-readers-table" className="min-w-full divide-y divide-neutral-100 text-left text-xs font-sans">
+                    <thead className="bg-[#fafaf9] border-b border-neutral-150 text-[10px] uppercase tracking-wider font-bold font-mono text-neutral-500">
                       <tr>
-                        <th className="px-4 py-2.5 text-center w-12 border-r border-slate-100">#</th>
-                        <th className="px-4 py-2.5 border-r border-slate-100">নাম</th>
-                        <th className="px-4 py-2.5 border-r border-slate-100">ইউজারনেম</th>
-                        <th className="px-4 py-2.5 text-center border-r border-slate-100">বর্তমান ওয়ালেট</th>
-                        <th className="px-4 py-2.5 text-center border-r border-slate-100">মোট রিচার্জ (৳)</th>
-                        <th className="px-4 py-2.5 text-center border-r border-slate-100">কার্ট</th>
-                        <th className="px-4 py-2.5 text-center border-r border-slate-100">সংরক্ষিত</th>
-                        <th className="px-4 py-2.5 text-center">বিশদ</th>
+                        <th className="px-5 py-3.5 text-center w-12">#</th>
+                        <th className="px-5 py-3.5">নাম</th>
+                        <th className="px-5 py-3.5">ইউজারনেম</th>
+                        <th className="px-5 py-3.5 text-center">বর্তমান ওয়ালেট</th>
+                        <th className="px-5 py-3.5 text-center">মোট রিচার্জ (৳)</th>
+                        <th className="px-5 py-3.5 text-center">কার্ট</th>
+                        <th className="px-5 py-3.5 text-center">সংরক্ষিত</th>
+                        <th className="px-5 py-3.5 text-center">বিশদ</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
+                    <tbody className="divide-y divide-neutral-100 bg-white">
                       {(() => {
                         const currentReaders = readers.length > 0 ? readers : MOCK_READERS;
                         const filteredReadersForAdmin = currentReaders.filter(r => 
@@ -955,7 +963,7 @@ export default function AdminPanel({
                         if (filteredReadersForAdmin.length === 0) {
                           return (
                             <tr>
-                              <td colSpan={8} className="px-4 py-12 text-center text-slate-400 italic">
+                              <td colSpan={8} className="px-5 py-12 text-center text-neutral-400 italic">
                                 কোনো পাঠক অ্যাকাউন্ট মিল পাওয়া যায়নি।
                               </td>
                             </tr>
@@ -966,40 +974,40 @@ export default function AdminPanel({
                           <tr 
                             key={r.id} 
                             onClick={() => setSelectedUserDetailInAdmin({ type: 'reader', data: r })}
-                            className="hover:bg-indigo-50/20 transition-colors cursor-pointer"
+                            className="hover:bg-neutral-50/60 transition-colors cursor-pointer duration-150"
                           >
-                            <td className="px-4 py-2 text-center font-mono text-slate-400 font-bold border-r border-slate-100">
+                            <td className="px-5 py-3.5 text-center font-mono text-neutral-400 font-bold">
                               {index + 1}
                             </td>
-                            <td className="px-4 py-2 font-extrabold text-slate-800 border-r border-slate-100">
-                              <div className="flex items-center gap-2">
-                                <img src={r.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150"} alt="" className="w-5.5 h-5.5 rounded-full object-cover border border-slate-100" />
-                                <span>{r.name}</span>
+                            <td className="px-5 py-3.5 font-bold text-neutral-850">
+                              <div className="flex items-center gap-3">
+                                <img src={r.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150"} alt="" className="w-8 h-8 rounded-full object-cover border border-neutral-200/50 shadow-3xs shrink-0" />
+                                <span className="text-[12px]">{r.name}</span>
                               </div>
                             </td>
-                            <td className="px-4 py-2 font-mono text-slate-605 border-r border-slate-100">
+                            <td className="px-5 py-3.5 font-mono text-neutral-500">
                               @{r.username}
                             </td>
-                            <td className="px-4 py-2 text-center font-mono text-amber-655 font-bold border-r border-slate-100">
-                              {r.currentCoins}
+                            <td className="px-5 py-3.5 text-center font-mono text-amber-600 font-bold">
+                              🪙 {r.currentCoins}
                             </td>
-                            <td className="px-4 py-2 text-center font-mono text-slate-700 border-r border-slate-100">
+                            <td className="px-5 py-3.5 text-center font-mono text-neutral-700 font-medium">
                               {(r.spentAmount || 0) + (r.totalCoinsPurchased || 0)}
                             </td>
-                            <td className="px-4 py-2 text-center font-mono text-slate-700 border-r border-slate-100">
+                            <td className="px-5 py-3.5 text-center font-mono text-neutral-700 font-medium">
                               {r.printCartCount || 0}
                             </td>
-                            <td className="px-4 py-2 text-center font-mono text-slate-700 border-r border-slate-100">
+                            <td className="px-5 py-3.5 text-center font-mono text-neutral-700 font-medium">
                               {r.savedArticlesCount || 0}
                             </td>
-                            <td className="px-4 py-2 text-center">
+                            <td className="px-5 py-3.5 text-center">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedUserDetailInAdmin({ type: 'reader', data: r });
                                 }}
-                                className="px-2 py-0.5 text-[10px] font-bold text-indigo-600 hover:underline"
+                                className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/60 rounded-lg text-[10px] font-bold transition-all duration-150"
                               >
                                 প্রোফাইল
                               </button>

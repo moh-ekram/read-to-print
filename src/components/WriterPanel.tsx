@@ -563,20 +563,20 @@ export default function WriterPanel({
               ) : (
                 <div className="space-y-4">
                   {/* Excel Sheet Style Table */}
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-3xs bg-white">
-                    <table className="w-full text-left text-xs text-slate-650 border-collapse">
+                  <div className="overflow-x-auto border border-neutral-200/85 rounded-2xl shadow-3xs bg-white">
+                    <table className="w-full text-left text-xs text-neutral-650 border-collapse">
                       <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200 text-slate-800 text-[11px] font-black uppercase tracking-wider">
-                          <th className="p-3 border-r border-slate-200 font-extrabold text-left min-w-[150px]">শিরোনাম (Title)</th>
-                          <th className="p-3 border-r border-slate-200 font-extrabold text-center">ক্যাটাগরি</th>
-                          <th className="p-3 border-r border-slate-200 font-extrabold text-center">পঠিত সংখ্যা (Reads)</th>
-                          <th className="p-3 border-r border-slate-200 font-extrabold text-center">অ্যাড টু প্রিন্ট</th>
-                          <th className="p-3 border-r border-slate-200 font-extrabold text-center text-amber-600 bg-amber-50/20">কয়েন আর্নিং</th>
-                          <th className="p-3 border-r border-slate-200 font-extrabold text-center text-emerald-600 bg-emerald-50/20">টাকা আর্নিং</th>
-                          <th className="p-3 font-extrabold text-center">অ্যাকশন</th>
+                        <tr className="bg-[#fafaf9] border-b border-neutral-150 text-neutral-500 text-[10px] uppercase tracking-wider font-bold font-mono">
+                          <th className="px-5 py-3.5 text-left min-w-[150px]">শিরোনাম (Title)</th>
+                          <th className="px-5 py-3.5 text-center">ক্যাটাগরি</th>
+                          <th className="px-5 py-3.5 text-center">পঠিত সংখ্যা (Reads)</th>
+                          <th className="px-5 py-3.5 text-center">অ্যাড টু প্রিন্ট</th>
+                          <th className="px-5 py-3.5 text-center text-amber-600">কয়েন আর্নিং</th>
+                          <th className="px-5 py-3.5 text-center text-emerald-600">টাকা আর্নিং</th>
+                          <th className="px-5 py-3.5 text-center">অ্যাকশন</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-150">
+                      <tbody className="divide-y divide-neutral-100">
                         {writerArticles.map((art) => {
                           const printCount = art.printCount ?? (Math.floor(art.reads / 8) + 2);
                           const earnedCoins = art.earnedCoins ?? ((art.requiredCoins || 0) * Math.floor(art.reads * 0.4));
@@ -585,54 +585,54 @@ export default function WriterPanel({
                           return (
                             <tr 
                               key={art.id} 
-                              className="hover:bg-indigo-50/40 transition-all group duration-150 cursor-pointer"
+                              className="hover:bg-neutral-50/60 transition-colors group duration-150 cursor-pointer"
                             >
                               <td 
                                 onClick={() => setViewingArticleForWriter(art)}
-                                className="p-3 border-r border-slate-150 text-slate-900 font-bold text-xs max-w-[200px] truncate group-hover:text-indigo-650"
+                                className="px-5 py-4 text-neutral-850 font-bold text-[12px] max-w-[200px] truncate group-hover:text-purple-750 transition-colors"
                               >
                                 {art.title}
                               </td>
                               <td 
                                 onClick={() => setViewingArticleForWriter(art)}
-                                className="p-3 border-r border-slate-150 text-center text-[10px]"
+                                className="px-5 py-4 text-center text-[10px]"
                               >
-                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-750 font-bold rounded-md">
+                                <span className="px-2.5 py-1 bg-purple-50 text-purple-750 font-bold rounded-full border border-purple-100/40">
                                   {art.category}
                                 </span>
                               </td>
                               <td 
                                 onClick={() => setViewingArticleForWriter(art)}
-                                className="p-3 border-r border-slate-150 text-center font-mono font-bold text-slate-600"
+                                className="px-5 py-4 text-center font-mono font-bold text-neutral-500"
                               >
                                 👁️ {art.reads}
                               </td>
                               <td 
                                 onClick={() => setViewingArticleForWriter(art)}
-                                className="p-3 border-r border-slate-150 text-center font-mono font-bold text-slate-600"
+                                className="px-5 py-4 text-center font-mono font-bold text-neutral-500"
                               >
                                 🖨️ {printCount}
                               </td>
                               <td 
                                 onClick={() => setViewingArticleForWriter(art)}
-                                className="p-3 border-r border-slate-150 text-center font-mono font-black text-amber-600 bg-amber-50/10"
+                                className="px-5 py-4 text-center font-mono font-black text-amber-600"
                               >
                                 🪙 {earnedCoins}
                               </td>
                               <td 
                                 onClick={() => setViewingArticleForWriter(art)}
-                                className="p-3 border-r border-slate-150 text-center font-mono font-black text-emerald-600 bg-emerald-50/10"
+                                className="px-5 py-4 text-center font-mono font-black text-emerald-600"
                               >
                                 ৳{earnedBdt}
                               </td>
-                              <td className="p-3 text-center flex items-center justify-center gap-1.5">
+                              <td className="px-5 py-4 text-center flex items-center justify-center gap-2">
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEditArticleClick(art);
                                   }}
-                                  className="p-1 px-2 hover:bg-slate-100 rounded-lg text-slate-650 hover:text-indigo-650 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                  className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-750 border border-purple-200/55 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
                                   title="সম্পাদনা"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
@@ -644,7 +644,7 @@ export default function WriterPanel({
                                     e.stopPropagation();
                                     onDeleteArticle(art.id);
                                   }}
-                                  className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all cursor-pointer"
+                                  className="p-1.5 rounded-lg hover:bg-rose-50 text-neutral-400 hover:text-rose-600 transition-colors cursor-pointer border border-transparent hover:border-rose-100"
                                   title="মুছে ফেলুন"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
